@@ -162,6 +162,7 @@ cython_debug/
 # Other files/folders
 data/
 combinations/
+remedy/config/*.yml
 .ipynb_checkpoints/
 exe/
 *.jpg
