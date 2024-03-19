@@ -1,0 +1,5 @@
+paths:
+  config: /home/phantasos/python_projects/space/project_remedy_REAL_copy/remedy/config
+  data: /home/phantasos/python_projects/space/project_remedy_REAL_copy/data/remedy_data
+  parent: /home/phantasos/python_projects/space/project_remedy_REAL_copy
+  project: /home/phantasos/python_projects/space/project_remedy_REAL_copy/remedy
