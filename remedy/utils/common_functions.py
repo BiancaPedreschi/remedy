@@ -1,8 +1,10 @@
-import ctypes
-xlib = ctypes.cdll.LoadLibrary("libX11.so")
-xlib.XInitThreads()
 from psychopy import core, event, gui
+import platform
 
+
+def check_os():
+    plf = platform.platform().split('-')[0]
+    return plf
 
 ##_____finestra input info part_id e sess + lista con info
 def get_meta():
@@ -66,13 +68,22 @@ def wait_kbd(okkeys=["space", "escape"]):
 
 
 def wait_kbd_emo(kb, okKeys=["space", "escape"]):
-    myKey = kb.waitKeys(keyList=okKeys, waitRelease=False, clear=True)
-    if myKey == "space":
-        return
-    elif myKey == "escape":
-        core.quit()
-    else:
-      return myKey  
+    if check_os() in ['Linux']:
+        myKey = kb.waitKeys(keyList=okKeys, waitRelease=False, clear=True)
+        if myKey == "space":
+            return
+        elif myKey == "escape":
+            core.quit()
+        else:
+            return myKey
+    elif check_os() in ['Windows', 'macOS']:
+        mykey = event.waitKeys(keyList=okKeys)
+        if mykey == ["space"]:
+            return
+        elif mykey == ["escape"]:
+            core.quit()
+        else:
+            return mykey
 
 
 # Pause until a specified key is hit and save the hit key

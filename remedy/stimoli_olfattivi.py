@@ -1,6 +1,8 @@
-import ctypes
-xlib = ctypes.cdll.LoadLibrary("libX11.so")
-xlib.XInitThreads()
+from utils.common_functions import check_os
+if check_os() in ['Linux']:
+    import ctypes
+    xlib = ctypes.cdll.LoadLibrary("libX11.so")
+    xlib.XInitThreads()
 from config.config import read_config
 import os
 import os.path as op

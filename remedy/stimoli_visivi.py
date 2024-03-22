@@ -1,6 +1,8 @@
-import ctypes
-xlib = ctypes.cdll.LoadLibrary("libX11.so")
-xlib.XInitThreads()
+from utils.common_functions import check_os
+if check_os() in ['Linux']:
+    import ctypes
+    xlib = ctypes.cdll.LoadLibrary("libX11.so")
+    xlib.XInitThreads()
 from config.config import read_config
 import random, glob, os
 import os.path as op
@@ -55,17 +57,18 @@ win = visual.Window(fullscr=True, size=(widthPix, heightPix), color="grey",
                     units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
                     winType="pyglet") 
 
-# mymouse = event.Mouse()
-# mymouse.setVisible(0)
-
-kb = keyboard.Keyboard(device=-1)
+if check_os() in ['Linux']:
+    kb = keyboard.Keyboard(device=-1)
+elif check_os() in ['Windows', 'macOS']:
+    kb = None
+    
 emoKeys = ['1','num_1','2','num_2','3','num_3','4','num_4','5','num_5','escape']
 
 #________________ -  INSTRUCTIONS   -
 # image_dir = '/Users/foscagiannotti/Desktop/project_remedy/img_istruzioni'
 image_dir = op.join(data_dir, 'img_instructions')
 
-# Percorsi completi per le immagini
+# Percorsi completi per le immaginis
 instr1_path = os.path.join(image_dir, 'instr1.png')
 end_path = os.path.join(image_dir, 'end.png')
 instr2_path = os.path.join(image_dir, 'instr2.png')

@@ -1,3 +1,8 @@
+from utils.common_functions import check_os
+if check_os() in ['Linux']:
+    import ctypes
+    xlib = ctypes.cdll.LoadLibrary("libX11.so")
+    xlib.XInitThreads()
 from olfactometer_controller import olfactometer
 from utils.common_functions import get_meta_night
 import questionnaire.dreamquestrc
