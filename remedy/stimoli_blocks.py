@@ -8,6 +8,7 @@ import pandas as pd
 import time
 from olfactometer_controller import olfactometer
 from utils.common_functions import wait_kbd_emo, get_meta, show
+from utils.find_serial import find_serial_device
 from psychopy import visual, core, event, monitors
 from psychopy.hardware import keyboard
 
@@ -15,31 +16,45 @@ from psychopy.hardware import keyboard
 config = read_config()
 parent_dir = config['paths']['parent']
 
-outputlog = [0] * (2 + 11 * 9 * 4)
-outputname = get_meta(outputlog)
-subject_id = outputlog[-2]
-session = int(outputlog[-1])
-# subject_id = outputname[0]
-# session = int(outputname[1])
+outputname = get_meta()
+subject_id = outputname[0]
+session = int(outputname[1])
 data_dir = config['paths']['data']
 mydir = op.join(data_dir, 'img_cathegories')
 
 # _______________ OLFACTOMETER FUNCTIONS recalls
 # port = "/dev/cu.usbmodem20220051"
-port = "/dev/ttyACM0"
+# port = "/dev/ttyACM0"
+###############################################################################
+# TODO: test this:
+# device_signature = 'f331:0002'
+# port = find_serial_device(device_signature)
+###############################################################################
 
+# Defining olfactometer output dirs
 output_directory = op.join(parent_dir, 'data', 'output_wake')
 os.makedirs(output_directory, exist_ok=True)
 current_day = time.strftime('%d%m%Y')
 output_filename = f'stream_blocks_Pp{subject_id}_sess{session}_{current_day}.txt'
 output_file_path = os.path.join(output_directory, output_filename)
 
-monitor = olfactometer(output_file_path)
-monitor.set_serial(port=port)
-monitor.open()
-
+###############################################################################
+# olfm = olfactometer(output_file_path)
+# olfm.set_serial(port=port)
+# olfm.open()
+###############################################################################
 
 def create_blocks(category, cat_dir):
+    """Given cathegories this function creates three blocks containing eleven 
+    items balanced according with valence
+
+    Args:
+        category (str): _description_
+        cat_dir (path_like): _description_
+
+    Returns:
+        _type_: _description_
+    """
 
     file_cat = os.path.join(cat_dir, category)
 
@@ -82,7 +97,7 @@ def get_odor_mapping(odors, categories):
     return [odors[cat] for cat in categories]
 
 
-def handle_online_olf_shutdown(monitor, check_only=False):
+def handle_online_olf_shutdown(olfm, check_only=False):
     """
     Controlla se l'utente ha premuto 'q' per chiudere l'olfattometro in modo sicuro.
     Se check_only è True, controlla solo se è stato premuto 'q' senza chiudere nulla.
@@ -94,7 +109,7 @@ def handle_online_olf_shutdown(monitor, check_only=False):
     key = event.getKeys()
     if 'q' in key:
         try:
-            monitor.write('S 0')
+            olfm.write('S 0')
             core.wait(3)
             print("interruzione manuale eseguita")
         except Exception as e:
@@ -104,11 +119,21 @@ def handle_online_olf_shutdown(monitor, check_only=False):
 
 
     # ________________________ Create blocks for the current session's category
-def main(monitor):
+###############################################################################
+# def main(olfm):
+###############################################################################
+def main():
+    
+    # Define paths
+    config = read_config()
+    parent_dir = config['paths']['parent']
+    data_dir = config['paths']['data']
     #________________-   MONITOR   -
 
-    widthPix = 1920  # screen width in px
-    heightPix = 1080  # screen height in px
+    # widthPix = 1920  # screen width in px
+    # heightPix = 1080  # screen height in px
+    widthPix = 800  # screen width in px
+    heightPix = 600  # screen height in px
     monitorwidth = 54.3  # monitor width in cm
     viewdist = 60.  # viewing distance in cm
     # monitorname = 'CH7210'
@@ -121,81 +146,61 @@ def main(monitor):
                         units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
                         winType="pyglet") 
 
-    # mymouse = event.Mouse()
-    # mymouse.setVisible(0)
-
     kb = keyboard.Keyboard(device=-1)
-    # emoKeys = ['1','num_1','2','num_2','3','num_3','4','num_4','5','num_5','escape']
-
 
     #________________ -  INSTRUCTIONS   -
-    data_dir = config['paths']['data']
-    mydir = op.join(data_dir, 'img_cathegories')
+
+    cath_dir = op.join(data_dir, 'img_cathegories')
     image_dir = op.join(data_dir, 'img_instructions')
 
     # Percorsi completi per le immagini
     instr1_path = os.path.join(image_dir, 'instr1_blocchi.png')
     end_path = os.path.join(image_dir, 'end.png')
-    instr2_path = os.path.join(image_dir, 'instr2.png')
-    instr3_path = os.path.join(image_dir, 'instr3.png')
-    valSAM_path = os.path.join(image_dir, 'valSAM.png')
-    aroSAM_path = os.path.join(image_dir, 'aroSAM.png')
 
     slide_instr = visual.ImageStim(win, image=instr1_path, units="pix", pos=(0, 0))
     slide_end = visual.ImageStim(win, image=end_path, units="pix", pos=(0, 0))
-    instrValSAM = visual.ImageStim(win, image=instr2_path, units="pix", pos=(0, 0))
-    instrAroSAM = visual.ImageStim(win, image=instr3_path, units="pix", pos=(0, 0))
 
     # Fixation cross
     fixcross = visual.TextStim(win, text="+", units="norm", pos=(0, 0.2), color="black")
-    # valSAM = visual.ImageStim(win, image=valSAM_path, units="norm", pos=(0, -0.8))
-    # aroSAM = visual.ImageStim(win, image=aroSAM_path, units="norm", pos=(0, -0.8))
 
     ##---------- time variables in seconds
 
-    image_duration = 1.5
-    block_interval = 10.0
+    # image_duration = 1.5
+    # block_interval = 10.0
+    
+    image_duration = .2
+    block_interval = .5
 
-    # Configurazione iniziale dell'olfattometro
-    monitor.run()
-    monitor.write('C M;;;;;;;')
-    core.wait(0.5)
-    monitor.write('E 1')
-    core.wait(0.5)
-    monitor.write('S 0')
+###############################################################################
+    # #Configurazione iniziale dell'olfattometro
+    # olfm.run()
+    # olfm.write('C M;;;;;;;')
+    # core.wait(0.5)
+    # olfm.write('E 1')
+    # core.wait(0.5)
+    # olfm.write('S 0')
+###############################################################################
 
     all_combinations_path =  op.join(parent_dir, 'combinations', 
                                      'all_combinations.csv')
     all_combinations_df = pd.read_csv(all_combinations_path)
-    
-    data_dir = config['paths']['data']
-    categories_path = op.join(data_dir, 'img_cathegories')
 
     participant_combinations = all_combinations_df.loc[all_combinations_df['Participant_ID'] == subject_id]
     participant_current_categ = all_combinations_df[
             (all_combinations_df['Participant_ID'] == subject_id) & (all_combinations_df['Session'] == session)][
             'Category'].tolist()
-
-    # odors_current_sess = all_combinations_df[
-    #     (all_combinations_df['Participant_ID'] == subject_id) & (all_combinations_df['Session'] == session)][
-    #     'Odor'].tolist()
-
-    blocks_current_sess = {cat: create_blocks(cat, categories_path) for cat in participant_current_categ}
+            
+    blocks_current_sess = {cat: create_blocks(cat, cath_dir) for cat in participant_current_categ}
 
     # Create a list containing all the blocks as sublists, then shuffle it.
+    # Stack together all the images of all the blocks considered for this session 
     all_blocks = [block for blocks in blocks_current_sess.values() for block in blocks]
     random.shuffle(all_blocks)
-
-    # Change it to tuple to get categories to use categ_current_block funct
-
 
     # Create a list of all categories corresponding to the new shuffled order of blocks and make it a list
     all_categories = [categ_current_block(block, blocks_current_sess) for block in all_blocks]
 
-
     all_blocks_with_categories = list(zip(all_categories, all_blocks))
-
-
 
     # Create a list with the corresponding odor for each block
     all_blocks_odor = [participant_combinations[participant_combinations['Category'] == cat]['Odor'].iloc[0] for cat in
@@ -203,14 +208,13 @@ def main(monitor):
 
 #_____________ dizionario corrispondenza odori-comandi
 
-    parent_dir = config['paths']['parent']
     manualcomm_path = op.join(parent_dir, 'combinations', 'manual_commands.csv')
     manualcomm_df = pd.read_csv(manualcomm_path, sep=';')
     participant_current_combinations = manualcomm_df[
         (manualcomm_df['Participant_ID'] == subject_id) & (manualcomm_df['Session'] == session)]
 
     odor_command_map = {}
-
+    
     # Itera sul dataframe dei comandi manuali
     for index, row in participant_current_combinations.iterrows():
         odor = row['Odor']
@@ -242,28 +246,27 @@ def main(monitor):
 ## --------------- Present stimuli blocks twice
     for cycle in range(2):
 
-        # Controlla se l'utente ha premuto 'q' a ogni iterazione
-        if handle_online_olf_shutdown(monitor,
-                                      check_only=False):
-            break
+###############################################################################
+        # # Controlla se l'utente ha premuto 'q' a ogni iterazione
+        # if handle_online_olf_shutdown(olfm,
+        #                               check_only=False):
+        #     break
+###############################################################################
 
         for nblock in range(len(all_blocks_with_categories)):
 
             category, _ = all_blocks_with_categories[nblock]
 
             # Navigate in the folder of the block
-            block_folder = op.join(categories_path, category)
+            block_folder = op.join(cath_dir, category)
             slide_block = visual.TextStim(win, text=f"BLOCK {nblock + 1}", units="norm", pos=(0, 0.2), color="black")
             show(slide_block)
-            monitor.write('S 0')
+###############################################################################
+            # olfm.write('S 0')
+###############################################################################
             core.wait(block_interval)
 
             counter = 0
-
-            block_imgnames = []
-            block_imgcats = []
-            block_imgodors = []
-            block_imgcommands = []
 
             for nimg in range(len(all_blocks[nblock])):
 
@@ -273,40 +276,42 @@ def main(monitor):
 
                 img_path = op.join(block_folder, imgname)
 
+###############################################################################
+                # olfm.write(all_block_commands[nblock])
+###############################################################################
                 img = visual.ImageStim(win, image=img_path, units="norm", pos=(0, 0))
-                monitor.write(all_block_commands[nblock])
                 show(img)
                 core.wait(image_duration)
-
-                log_imgnames[nblock].append(imgname)
-                log_imgcats[nblock].append(category)
-                log_imgodors[nblock].append(all_blocks_odor[nblock])
-                log_imgcommands[nblock].append(all_block_commands[nblock])
+                
+                if cycle == 0:
+                    log_imgnames[nblock].append(imgname)
+                    log_imgcats[nblock].append(category)
+                    log_imgodors[nblock].append(all_blocks_odor[nblock])
+                    log_imgcommands[nblock].append(all_block_commands[nblock])
 
                 counter += 1
 
                 if counter > 2: # TESTING PURPOSES ONLY - Limits block to X images
-                    monitor.write('S 0')
-                    core.wait(0.5)
+###############################################################################
+                    # olfm.write('S 0')
+                    # core.wait(0.5)
+###############################################################################
                     break
+            
+###############################################################################
+    # olfm.write('S 0')
+    # show(slide_end)
+    # core.wait(5)
+    # show(fixcross)
+    # core.wait(2)
+    # win.close()
 
-            log_imgnames.append(block_imgnames)
-            log_imgcats.append(block_imgcats)
-            log_imgodors.append(block_imgodors)
-            log_imgcommands.append(block_imgcommands)
-
-    monitor.write('S 0')
-    show(slide_end)
-    core.wait(5)
-    show(fixcross)
-    core.wait(2)
-    win.close()
-
-    monitor.write('E 0')
-    core.wait(0.5)
-    monitor.stop()
-    core.wait(0.5)
-    monitor.close()
+    # olfm.write('E 0')
+    # core.wait(0.5)
+    # olfm.stop()
+    # core.wait(0.5)
+    # olfm.close()
+###############################################################################
 
         # --------------------------  EXPERIMENT END  --------------------------
     df = pd.DataFrame({
@@ -325,4 +330,5 @@ def main(monitor):
 
 
 if __name__ == "__main__":
-    main(monitor)
+    # main(olfm)
+    main()

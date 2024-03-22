@@ -5,7 +5,7 @@ from psychopy import core, event, gui
 
 
 ##_____finestra input info part_id e sess + lista con info
-def get_meta(lst):
+def get_meta():
     dlg = gui.Dlg(title='REMEDY-Wake Task')
     dlg.addField("Participant ID:")
     dlg.addField("Session:", choices=['1', '2'])
@@ -24,11 +24,34 @@ def get_meta(lst):
         print("Participant ID is not a number, cancelling test.")
         core.quit()
 
-    lst.extend([participant_id, session])
+    # lst.extend([participant_id, session])
 
 
     # output_name = os.path.join(folder_path, file_name)
     return participant_id, session
+
+
+def get_meta_night():
+    dlg = gui.Dlg(title='REMEDY-Wake Task')
+    dlg.addField("Participant ID:")
+    dlg.addField("Session:", choices=['1', '2'])
+    dlg.addField("Gender", choices=['M', 'F'])
+
+    params = dlg.show()
+
+    if not dlg.OK:
+        print("Action cancelled by user.")
+        core.quit()
+
+    snr, session, gnd = params
+
+    try:
+        participant_id = int(snr)
+    except ValueError:
+        print("Participant ID is not a number, cancelling test.")
+        core.quit()
+        
+    return participant_id, session, gnd
 
 
 def wait_kbd(okkeys=["space", "escape"]):

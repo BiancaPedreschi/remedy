@@ -7,6 +7,7 @@ import os.path as op
 import time
 import pandas as pd
 from utils.common_functions import wait_kbd_emo, get_meta, show, str2num
+from utils.find_serial import find_serial_device
 from psychopy import visual, core, event, monitors
 from psychopy.hardware import keyboard
 from olfactometer_controller import olfactometer
@@ -19,10 +20,9 @@ manualcomm_df = pd.read_csv(manualcomm_path, sep=';')
 
 odorList = []
 
-outputlog = [0] * (10 + len(odorList) * 3)
-outputName = get_meta(outputlog)
-subject_id = outputlog[-2]
-session = int(outputlog[-1])
+outputname = get_meta()
+subject_id = outputname[0]
+session = int(outputname[1])
 
 data_dir = config['paths']['data']
 
@@ -46,7 +46,10 @@ print(commandList)
 # _______________ OLFACTOMETER recalls
 
 # port = "/dev/cu.usbmodem20220051"
-port = "/dev/ttyACM0"
+# port = "/dev/ttyACM0"
+# TODO: test this:
+device_signature = 'f331:0002'
+port = find_serial_device(device_signature)
 
 
 output_directory = op.join(parent_dir, 'data', 'output_wake')
@@ -73,12 +76,6 @@ mon.setSizePix((widthPix, heightPix))
 win = visual.Window(fullscr=True, size=(widthPix, heightPix), color="grey", 
                     units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
                     winType="pyglet") 
-# win = visual.Window(fullscr=False, size=(800, 600), color="grey", 
-#                     units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
-#                     winType="pyglet")
-
-# mymouse = event.Mouse()
-# mymouse.setVisible(0)
 
 kb = keyboard.Keyboard(device=-1)
 emoKeys = ['1','num_1','2','num_2','3','num_3','4','num_4','5','num_5','escape']

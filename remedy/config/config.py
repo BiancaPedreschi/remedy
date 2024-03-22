@@ -3,12 +3,13 @@ import os.path as op
 import yaml
 
 def generate_config():
-    cwd = os.getcwd()
-    prj = op.join(cwd, 'remedy')
+    parent_path = op.abspath(os.path.join(__file__, os.pardir, 
+                                        os.pardir, os.pardir))
+    prj = op.join(parent_path, 'remedy')
     conf = op.join(prj, 'config')
     conf_fname = op.join(conf, 'config.yml')
     
-    paths = {'paths': {'parent': cwd,
+    paths = {'paths': {'parent': parent_path,
                        'project': prj,
                        'config': conf}
         }
@@ -19,8 +20,9 @@ def generate_config():
     return
 
 def read_config():
-    cwd = os.getcwd()
-    prj = op.join(cwd, 'remedy')
+    parent_path = op.abspath(os.path.join(__file__, os.pardir, 
+                                        os.pardir, os.pardir))
+    prj = op.join(parent_path, 'remedy')
     conf = op.join(prj, 'config')
     conf_fname = op.join(conf, 'config.yml')
     

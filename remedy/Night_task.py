@@ -7,12 +7,12 @@ import psychtoolbox as ptb
 from psychopy import core
 import threading
 
-outputlog = []
-get_meta_night(outputlog)
 
-participant_id = outputlog[0]
-session = int(outputlog[1])
-sex = outputlog[2]
+outputname = get_meta_night()
+
+participant_id = outputname[0]
+session = int(outputname[1])
+sex = outputname[2]
 
 # _______________ OLFACTOMETER inizialiation and output
 

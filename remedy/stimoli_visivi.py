@@ -18,11 +18,9 @@ all_combinations_path =  op.join(parent_dir, 'combinations',
 all_combinations_df = pd.read_csv(all_combinations_path)
 
 imgList = []
-
-outputlog = [0] * (10 + len(imgList) * 3)
-outputName = get_meta(outputlog)
-subject_id = outputlog[-2]
-session = int(outputlog[-1])
+outputname = get_meta()
+subject_id = outputname[0]
+session = int(outputname[1])
 
 data_dir = config['paths']['data']
 mydir = op.join(data_dir, 'img_cathegories')
