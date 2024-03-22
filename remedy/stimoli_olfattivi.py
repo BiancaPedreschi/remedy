@@ -79,7 +79,10 @@ win = visual.Window(fullscr=True, size=(widthPix, heightPix), color="grey",
                     units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
                     winType="pyglet") 
 
-kb = keyboard.Keyboard(device=-1)
+if check_os() in ['Linux']:
+    kb = keyboard.Keyboard(device=-1)
+elif check_os() in ['Windows', 'macOS']:
+    kb = None
 emoKeys = ['1','num_1','2','num_2','3','num_3','4','num_4','5','num_5','escape']
 
 # ________________ -  INSTRUCTIONS   -

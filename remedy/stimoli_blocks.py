@@ -147,8 +147,11 @@ def main():
     win = visual.Window(fullscr=False, size=(widthPix, heightPix), color="grey", 
                         units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
                         winType="pyglet") 
-
-    kb = keyboard.Keyboard(device=-1)
+    
+    if check_os() in ['Linux']:
+        kb = keyboard.Keyboard(device=-1)
+    elif check_os() in ['Windows', 'macOS']:
+        kb = None
 
     #________________ -  INSTRUCTIONS   -
 
