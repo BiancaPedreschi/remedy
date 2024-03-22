@@ -1,4 +1,4 @@
-from olfactometer_controller_B import olfactometer
+from olfactometer_controller import olfactometer
 from utils.common_functions import get_meta_night
 import questionnaire.dreamquestrc
 import os
