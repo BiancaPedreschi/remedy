@@ -127,9 +127,9 @@ def save_emotion_scores(names, vals, aros, commands, space_press_times,
         'FirstSpacePressTime': space_press_times,
         'SecondSpacePressTime': second_space_press_times
     })
-
+    current_day = time.strftime('%d%m%Y')
     df.to_csv(op.join(output_directory,
-                      f"ODORS_testing_Pp{subject_id}_{odor1}_{odor2}.csv"),
+                      f"PILOTod_Pp{subject_id}_{odor1}_{odor2}_{current_day}.csv"),
               index=False)
 ###########################
 
@@ -140,7 +140,7 @@ def save_emotion_scores(names, vals, aros, commands, space_press_times,
 #     Altrimenti, chiude tutto in modo sicuro.
 #     """
 #     if check_only:
-#         return  # Non fare nulla, solo il controllo è gestito nel ciclo principale
+#         return  
 #
 #     key = event.getKeys()
 #     if 'q' in key:
@@ -163,6 +163,7 @@ def main():
     # olfm.write('S 0')
     # core.wait(5)
 
+    experiment_clock = core.Clock()
     counter = 0
     space_press_times = []
     second_space_press_times = []
@@ -170,66 +171,89 @@ def main():
 
     for nOdor, command in enumerate(commandList):
 
-        # Esegue l'esperimento per ogni odore
         show(fixcross)
         core.wait(1)
         slide_odor = visual.TextStim(win, text=f"ODOR {nOdor + 1}",
                                      units="norm", pos=(0, 0), color="black")
 
-        slide_time1 = visual.TextStim(win, text=f"Premi la freccia destra"
-                                                f" quando senti l'odore",
+        slide_time1 = visual.TextStim(win, text=f"Premi la FRECCIA DESTRA"
+                                                f" quando SENTI l'odore",
                                      units="norm", pos=(0, 0), color="black")
-        slide_time2 = visual.TextStim(win, text=f"Premi la freccia destra "
+        slide_time2 = visual.TextStim(win, text=f"Premi la FRECCIA DESTRA "
                                                 f"quando NON senti più l'odore",
                                       units="norm", pos=(0, 0), color="black")
-
         show(slide_odor)
-        core.wait(3)
+        core.wait(2)
 
-        #olfm.write(command)
-        show(slide_time1)
-        tempo_premuto1 = wait_kbd_emo_and_get_time(kb, okKeys=timeKeys)
-        if tempo_premuto1 is not None:
-            space_press_times.append(tempo_premuto1)
-        show(fixcross)
-        core.wait(4)
+        # Inizia la stimolazione olfattiva
+        # olfm.write(command)
+        experiment_clock.reset()
 
-        #olfm.write('S 0')
-        show(slide_time2)
-        tempo_premuto2 = wait_kbd_emo_and_get_time(kb, okKeys=timeKeys)
-        if tempo_premuto2 is not None:
-            second_space_press_times.append(tempo_premuto2)
-        show(fixcross)
-        core.wait(4)
+        # Primo monitoraggio: quando l'utente inizia a sentire l'odore
+        first_press_detected = False
+        while experiment_clock.getTime() < 16.5:
+            if not  first_press_detected:
+                slide_time1.draw()
+                win.flip()
+                keyName = wait_kbd_emo_and_get_time(kb, okKeys=["right", "escape"])
+                if keyName == "right":
+                    first_press_time = experiment_clock.getTime()
+                    first_press_detected = True
+                    space_press_times.append(first_press_time)
+                    print(f"First key pressed: right, Time: {first_press_time}")
+                elif keyName == "escape":
+                    core.quit()
+            else:
+                show(fixcross)
 
+        if not first_press_detected:
+            space_press_times.append(None)
+
+        # Inizia il periodo di aria
+        experiment_clock.reset()
+
+        # Secondo monitoraggio: quando l'utente smette di sentire l'odore
+        second_press_detected = False
+        while experiment_clock.getTime() < 60:
+            if not second_press_detected:
+                slide_time2.draw()
+                win.flip()
+                keyName = wait_kbd_emo_and_get_time(kb, okKeys=["right", "escape"])
+                if keyName == "right":
+                    second_press_time = experiment_clock.getTime()
+                    second_press_detected = True
+                    second_space_press_times.append(second_press_time)
+                    print(f"Second key pressed: right, Time: {second_press_time}")
+                elif keyName == "escape":
+                    core.quit()
+            else:
+                show(fixcross)  # Continua a mostrare la croce di fissazione
+
+        if not second_press_detected:
+            second_space_press_times.append(None)
 
         # Valence rating
         valSAM.draw()
         win.flip()
-        response = wait_kbd_emo_and_get_time(kb, okKeys=emoKeys)
-        if response is not None:
-            keyName, _ = response # Ignora il tempo di reazione
-            vals[nOdor] = str2num_2(keyName)  # Passa solo il nome del tasto a str2num_2
-        else:
-            # Gestisci il caso in cui non viene premuto nessun tasto valido
-            print("Nessun tasto valido premuto.")
+        resp = wait_kbd_emo(kb, okKeys=emoKeys)
+        print(f"Resp: {resp}")
+        if isinstance(resp, list) and len(resp) > 0:
+            resp = resp[0]
+        vals[nOdor] = str2num_2(resp)
 
 
         # Arousal rating
         aroSAM.draw()
         win.flip()
-        response = wait_kbd_emo_and_get_time(kb, okKeys=emoKeys)
-        if response is not None:
-            keyName, _ = response  # Ignora il tempo di reazione
-            aros[nOdor] = str2num_2(keyName)  # Passa solo il nome del tasto a str2num_2
-        else:
-            # Gestisci il caso in cui non viene premuto nessun tasto valido
-            print("Nessun tasto valido premuto.")
+        resp = wait_kbd_emo(kb, okKeys=emoKeys)
+        print(f"Resp: {resp}")
+        if isinstance(resp, list) and len(resp) > 0:
+            resp = resp[0]
+        aros[nOdor] = str2num_2(resp)
 
         show(fixcross)
         #olfm.write('S 0')
         core.wait(2)
-
 
         counter += 1
 

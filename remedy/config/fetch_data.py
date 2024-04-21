@@ -17,7 +17,9 @@ def extract(tar_url, extract_path='.'):
 def fetch_data():
     config = read_config()
     parent_dir = config['paths']['parent']
-    url = ('https://drive.google.com/file/d/12tFrfTJTmUxXCHIEhgfRjXLcad9pylVt/view?usp=sharing')
+    #url = ('https://drive.google.com/file/d/12tFrfTJTmUxXCHIEhgfRjXLcad9pylVt/view?usp=sharing')
+    url =('https://drive.google.com/file/d/16kLFIwvu-9YjuxSB0KkwqTgRK-m6IOB6/view?usp=sharing')
+
 
     print('Creating data path...')
     output_dir = op.join(parent_dir, 'data')
