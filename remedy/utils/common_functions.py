@@ -112,27 +112,19 @@ def wait_kbd_emo(kb, okKeys=["space", "escape"]):
 
 def wait_kbd_emo_and_get_time(kb, okKeys=["space", "escape", "right"]):
     if check_os() in ['Linux']:
-        myKeys = kb.waitKeys(keyList=okKeys, waitRelease=False, clear=True, timeStamped=True)
+        myKeys = kb.waitKeys(keyList=okKeys, waitRelease=False, clear=True)
         if myKeys:
-            keyName, time = myKeys[0].name, myKeys[0].rt  # rt sta per reaction time
-            if keyName == "right":
-                return time  # Restituisce il tempo se premuto la freccia destra
-            elif keyName == "space":
-                return None  # O restituisci qualcosa di specifico se necessario
-            elif keyName == "escape":
-                core.quit()
+            keyName = myKeys[0].name
+            print(f"Key pressed: {keyName}")
+            return keyName
     elif check_os() in ['Windows', 'macOS']:
-        myKeys = event.waitKeys(keyList=okKeys, timeStamped=core.Clock())
+        myKeys = event.waitKeys(keyList=okKeys)
         if myKeys:
-            keyName, time = myKeys[0]  # myKeys[0] è una tupla (nome_tasto, tempo)
-            if keyName == "right":
-                return time  # Restituisce il tempo se premuto la freccia destra
-            elif keyName == "space":
-                return None  # O restituisci qualcosa di specifico se necessario
-            elif keyName == "escape":
-                core.quit()
-    print(f"Key pressed: {keyName}, Time: {time}")
-    return keyName, time
+            keyName = myKeys[0]
+            print(f"Key pressed: {keyName}")
+            return keyName
+    return None
+
 
 def get_kbd(okkeys=None):
     pressedkeys = []

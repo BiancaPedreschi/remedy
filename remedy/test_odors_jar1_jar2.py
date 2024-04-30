@@ -210,6 +210,7 @@ def main():
             space_press_times.append(None)
 
         # Inizia il periodo di aria
+
         experiment_clock.reset()
 
         # Secondo monitoraggio: quando l'utente smette di sentire l'odore
