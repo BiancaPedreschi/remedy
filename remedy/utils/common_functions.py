@@ -94,7 +94,7 @@ def wait_kbd(okkeys=["space", "escape"]):
 
 def wait_kbd_emo(kb, okKeys=["space", "escape"]):
     if check_os() in ['Linux']:
-        myKey = kb.waitKeys(keyList=okKeys, waitRelease=False, clear=True)
+        myKey = kb.waitKeys(keyList=okKeys, waitRelease=False, clear=True)[0]
         if myKey == "space":
             return
         elif myKey == "escape":
