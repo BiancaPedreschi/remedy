@@ -1,6 +1,6 @@
 import threading  
 from utils.common_functions import check_os
-from utils.audio_recorder import start_recording, save_recording
+from utils.audio_recorder import start_recording, save_recording_pseudowords
 if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
@@ -112,7 +112,7 @@ def main():
     
     # Salva la registrazione audio su file
     if recorded_data:
-        save_recording(recorded_data[0], output_directory, subject_id, session, fs)
+        save_recording_pseudowords(recorded_data[0], output_directory, subject_id, session, fs)
     show(slide_end)
     core.wait(2)
     win.close()
