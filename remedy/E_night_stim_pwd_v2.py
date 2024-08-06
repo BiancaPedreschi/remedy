@@ -51,15 +51,15 @@ def stop_pink_noise(pink_noise):
     if pink_noise:
         pink_noise.stop()
 
-def fade_sound(sound_obj, duration=0.1, fade_in=True, start_volume=0, end_volume=1):
-    steps = int(duration * 100) 
-    for i in range(steps):
-        if fade_in:
-            volume = start_volume + (end_volume - start_volume) * (i / (steps - 1))
-        else:
-            volume = end_volume - (end_volume - start_volume) * (i / (steps - 1))
-        sound_obj.setVolume(volume)
-        core.wait(duration / steps)
+# def fade_sound(sound_obj, duration=0.1, fade_in=True, start_volume=0, end_volume=1):
+#     steps = int(duration * 100) 
+#     for i in range(steps):
+#         if fade_in:
+#             volume = start_volume + (end_volume - start_volume) * (i / (steps - 1))
+#         else:
+#             volume = end_volume - (end_volume - start_volume) * (i / (steps - 1))
+#         sound_obj.setVolume(volume)
+#         core.wait(duration / steps)
 
 
 def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, parent_dir, pink_noise):
@@ -116,9 +116,11 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
                 stimulation_timer.reset()
                 next_sound_time = 0  # Resetta il tempo per il prossimo suono
                 send_trigger(BG_TRIG)
+                stop_pink_noise(pink_noise)
                 print(f"File audio selezionato: {os.path.basename(selected_sound.fileName)}")
 
         if stimulation_started:
+            stop_pink_noise(pink_noise)
             elapsed_time = current_time
             timer_text.text = f"Tempo trascorso: {elapsed_time:.0f} secondi"
             timer_text.draw()
@@ -145,42 +147,29 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
                 if elapsed_time >= min_duration:
                     print("Richiesta di terminare la stimolazione.")
                     send_trigger(ED_TRIG)
+                    stop_pink_noise(pink_noise)
                     break
                 else:
                     print(f"Non puoi terminare la stimolazione prima di {min_duration} secondi.")
 
             # Nel ciclo principale:
-                if current_time >= next_sound_time:
-                    # Fade out del pink noise
-                    fade_sound(pink_noise, duration=0.1, fade_in=False, start_volume=1.0, end_volume=0.0)
+            if current_time >= next_sound_time:
+                stop_pink_noise(pink_noise)
+                selected_sound.play()
+                stim_start_time = current_time
+                stim_duration = selected_sound.getDuration()
+                print(f"Durata stimolo: {stim_duration:.2f} secondi")  # Stampa la durata dello stimol
+                # Calcola un intervallo casuale tra 1.5 e 2.5 secondi
+                inter_stimulus_interval = random.uniform(1.5, 2.5)
+                print(f"Tempo atteso: {inter_stimulus_interval:.2f} secondi")
 
-                    # Riproduci lo stimolo selezionato
-                    selected_sound.play()
-                    fade_sound(selected_sound, duration=0.1, fade_in=True, start_volume=0.0, end_volume=1.0)
+                # Attendi l'intervallo tra gli stimoli
+                core.wait(inter_stimulus_interval)
 
-                    stim_start_time = current_time
-                    stim_duration = selected_sound.getDuration()
-                    print(f"Durata stimolo: {stim_duration:.2f} secondi")  # Stampa la durata dello stimolo
+                # Aggiorna il tempo per il prossimo stimolo
+                next_sound_time = stim_start_time + inter_stimulus_interval
 
-                    # Attendi la durata dello stimolo meno il tempo di fade
-                    core.wait(stim_duration - 0.1)
-
-                    # Fade out dello stimolo e fade in del pink noise
-                    fade_sound(selected_sound, duration=0.1, fade_in=False, start_volume=1.0, end_volume=0.0)
-                    selected_sound.stop()
-                    fade_sound(pink_noise, duration=0.1, fade_in=True, start_volume=0.0, end_volume=1.0)
-
-                    # Calcola un intervallo casuale tra 1.5 e 2.5 secondi
-                    inter_stimulus_interval = random.uniform(1.5, 2.5)
-                    print(f"Tempo atteso: {inter_stimulus_interval:.2f} secondi")
-
-                    # Attendi l'intervallo tra gli stimoli
-                    core.wait(inter_stimulus_interval)
-
-                    # Aggiorna il tempo per il prossimo stimolo
-                    next_sound_time = stim_start_time + inter_stimulus_interval
-
-                core.wait(0.01)
+            core.wait(0.01)
 
     # Salva i tempi di stimolazione
     with open(output_file, 'w', newline='') as csvfile:

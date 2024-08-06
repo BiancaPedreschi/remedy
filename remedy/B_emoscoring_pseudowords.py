@@ -26,7 +26,7 @@ def main():
     parent_dir = config['paths']['parent']
     data_dir = op.join(parent_dir, 'data', 'remedy_data')
     all_combinations_path =  op.join(parent_dir, 'combinations', 
-                                     'all_combinations_pseudo_simvid.csv')
+                                     'all_combinations_pseudo_final.csv')
     all_combinations_df = pd.read_csv(all_combinations_path)
 
     outputname = get_meta()
