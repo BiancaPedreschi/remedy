@@ -1,12 +1,13 @@
 from psychopy import core, event, visual, sound, gui
 from .questlist import questlist
 import os
+import os.path as op
 from datetime import datetime
 import numpy as np
 import json
 import threading
 import importlib.util
-spec = importlib.util.spec_from_file_location("audio_recorder", "/Users/foscagiannotti/Desktop/python_projects/space/remedy/remedy/utils/audio_recorder.py")
+spec = importlib.util.spec_from_file_location("audio_recorder", op.join(os.getcwd(), 'remedy', 'utils', 'audio_recorder.py'))
 audio_recorder = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audio_recorder)
 start_recording = audio_recorder.start_recording

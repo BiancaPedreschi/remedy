@@ -11,6 +11,10 @@ import pandas as pd
 from utils.common_functions import wait_kbd_emo, get_meta, show, str2num
 from psychopy import visual, core, event, monitors, sound
 from psychopy.hardware import keyboard
+from psychopy import prefs
+
+prefs.hardware['audioLib'] = ['ptb', 'pyo', 'pygame']
+prefs.general['audioDevice'] = 'default'
 
 def save_emotion_scores(names, vals, aros, output_directory, subject_id, session):
     df = pd.DataFrame({
@@ -24,9 +28,9 @@ def save_emotion_scores(names, vals, aros, output_directory, subject_id, session
 def main():
     config = read_config()
     parent_dir = config['paths']['parent']
-    data_dir = op.join(parent_dir, 'data', 'remedy_data')
+    data_dir = op.join(parent_dir, 'data')
     all_combinations_path =  op.join(parent_dir, 'combinations', 
-                                     'all_combinations_pseudo_simvid.csv')
+                                     'all_combinations_pseudo_final.csv')
     all_combinations_df = pd.read_csv(all_combinations_path)
 
     outputname = get_meta()
@@ -51,18 +55,18 @@ def main():
     aros = []
 
 
-    # widthPix = 1920  # screen width in px
-    # heightPix = 1080  # screen height in px
-    # monitorwidth = 54.3  # monitor width in cm
-    # viewdist = 60.  # viewing distance in cm
-    # monitorname = 'CH7210'
-    # #monitorname = 'DP-6'
+    widthPix = 1920  # screen width in px
+    heightPix = 1080  # screen height in px
+    monitorwidth = 54.3  # monitor width in cm
+    viewdist = 60.  # viewing distance in cm
+    #monitorname = 'CH7210'
+    monitorname = 'DP-6'
     # scrn = 1  # 0 to use main screen, 1 to use external screen
-    widthPix = 2560  # screen width in px
-    heightPix = 1440  # screen height in px
-    monitorwidth = 28.04  # monitor width in cm (puoi mantenere questo valore se è corretto)
-    viewdist = 60.  # viewing distance in cm (puoi mantenere questo valore se è corretto)
-    monitorname = 'MacBook Pro 13"'
+    # widthPix = 2560  # screen width in px
+    # heightPix = 1440  # screen height in px
+    # monitorwidth = 28.04  # monitor width in cm (puoi mantenere questo valore se è corretto)
+    # viewdist = 60.  # viewing distance in cm (puoi mantenere questo valore se è corretto)
+    # monitorname = 'MacBook Pro 13"'
     scrn = 0 
     mon = monitors.Monitor(monitorname, width=monitorwidth, distance=viewdist)
     mon.setSizePix((widthPix, heightPix))
