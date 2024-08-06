@@ -227,7 +227,7 @@ def main():
     print(f"Stimolo REM: {os.path.basename(rem_stimulus)}")
     print(f"Stimolo di controllo (non usato): {os.path.basename(control_stimulus)}")
 
-    pink_noise_file = "pink_noise_20min.wav"
+    pink_noise_file = "pink_noise_60min.wav"
     pink_noise = play_pink_noise(pink_noise_file)
     print("Pink noise avviato.")
 
