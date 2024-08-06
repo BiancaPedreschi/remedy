@@ -1,6 +1,7 @@
 import pandas as pd
 import random
 import os
+import os.path as op
 
 def generate_combinations(participant_id, categories, audio_labels, base_audio_path):
 
@@ -39,11 +40,11 @@ def main():
     categories = ['Buildings', 'Children', 'Food', 'Mammals', 'Vehicles', 'Water']
     audio_labels = ['A', 'B', 'C', 'D', 'E', 'F']  
 
-    base_audio_path = '/Users/foscagiannotti/Desktop/python_projects/space/remedy/data/remedy_data/pwd'  
+    base_audio_path = op.join(os.getcwd(), 'data', 'pwd')
 
     all_combinations = pd.DataFrame()
 
-    for participant_id in range(1, 26):
+    for participant_id in range(1, 46):
         combinations = generate_combinations(participant_id, categories, audio_labels, base_audio_path)
         all_combinations = pd.concat([all_combinations, combinations])
    # Verifica il bilanciamento delle combinazioni
@@ -55,7 +56,7 @@ def main():
 
     print("\nCounts per Audio:")
     print(audio_counts)
-    all_combinations.to_csv('all_combinations_pseudo_final.csv', index=False)
+    all_combinations.to_csv(op.join(os.getcwd(), 'combinations', 'all_combinations_pseudo_final.csv'), index=False)
 
 if __name__ == "__main__":
     main()
