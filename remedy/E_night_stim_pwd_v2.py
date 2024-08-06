@@ -7,17 +7,25 @@ import csv
 import os
 import pandas as pd
 import random
-from psychopy import visual, core, sound, event
+from psychopy import visual, core, sound, event, monitors
 from psychopy.hardware import keyboard
 from psychopy import prefs
+from psychtoolbox import audio, GetSecs
 
-prefs.hardware['audioLib'] = ['ptb', 'pyo', 'pygame']
-prefs.general['audioDevice'] = 'default'
+# prefs.hardware['audioLib'] = ['ptb', 'pyo', 'pygame']
+prefs.hardware['audioLib'] = ['PTB', 'sounddevice', 'pyo', 'pygame']
+prefs.hardware['audioDevice'] = 'sysdefault'
+prefs.hardware['audioLatencyMode'] = 3
 
 if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
     xlib.XInitThreads()
+    
+if check_os() in ['Linux']:
+    kb = keyboard.Keyboard(device=-1)
+elif check_os() in ['Windows', 'macOS']:
+    kb = None
 
 # Definizione dei codici trigger
 RC_TRIG = 10  # Start Recording
@@ -50,6 +58,8 @@ def play_pink_noise(pink_noise_file):
 def stop_pink_noise(pink_noise):
     if pink_noise:
         pink_noise.stop()
+        pink_noise = None
+    return pink_noise
 
 # def fade_sound(sound_obj, duration=0.1, fade_in=True, start_volume=0, end_volume=1):
 #     steps = int(duration * 100) 
@@ -64,12 +74,12 @@ def stop_pink_noise(pink_noise):
 
 def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, parent_dir, pink_noise):
     # Carica i suoni
-    n2_sound = sound.Sound(n2_stimulus)
-    rem_sound = sound.Sound(rem_stimulus)
+    # n2_sound = sound.Sound(n2_stimulus)
+    # rem_sound = sound.Sound(rem_stimulus)
 
     # Imposta l'allarme
     alarm_path = os.path.join(parent_dir, 'alarm_beep.wav')
-    alarm = sound.Sound(alarm_path)
+    # alarm = sound.Sound(alarm_path)
 
     output_directory = os.path.join(parent_dir, 'output_NightStim')
     os.makedirs(output_directory, exist_ok=True)
@@ -100,15 +110,20 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
             instruction_text.text = "Premi 'N' per stimolo N2, 'W' per stimolo REM"
             instruction_text.draw()
             win.flip()
-            keys = event.waitKeys(keyList=['n', 'w', 'escape', 'esc'])
+            # keys = event.waitKeys(keyList=['n', 'w', 'escape', 'esc'])
+            keys = kb.waitKeys(keyList=['n', 'w', 'escape', 'esc'])
             if 'escape' in keys or 'esc' in keys:
                 return "quit"
             if 'n' in keys:
                 stimulation_started = True
+                stop_pink_noise(pink_noise)
+                n2_sound = sound.Sound(n2_stimulus)
                 selected_sound = n2_sound
                 print("Stimolazione N2 selezionata")
             elif 'w' in keys:
                 stimulation_started = True
+                stop_pink_noise(pink_noise)
+                rem_sound = sound.Sound(rem_stimulus)
                 selected_sound = rem_sound
                 print("Stimolazione REM selezionata")
 
@@ -116,11 +131,11 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
                 stimulation_timer.reset()
                 next_sound_time = 0  # Resetta il tempo per il prossimo suono
                 send_trigger(BG_TRIG)
-                stop_pink_noise(pink_noise)
+                # stop_pink_noise(pink_noise)
                 print(f"File audio selezionato: {os.path.basename(selected_sound.fileName)}")
 
         if stimulation_started:
-            stop_pink_noise(pink_noise)
+            # stop_pink_noise(pink_noise)
             elapsed_time = current_time
             timer_text.text = f"Tempo trascorso: {elapsed_time:.0f} secondi"
             timer_text.draw()
@@ -132,7 +147,8 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
                 print("Durata massima raggiunta.")
                 break
 
-            keys = event.getKeys(['q', 'r', 'escape', 'esc'])
+            # keys = event.getKeys(['q', 'r', 'escape', 'esc'])
+            keys = kb.getKeys(['q', 'r', 'escape', 'esc'])
             if 'escape' in keys or 'esc' in keys:
                 send_trigger(ED_TRIG)
                 return "quit"
@@ -154,7 +170,7 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
 
             # Nel ciclo principale:
             if current_time >= next_sound_time:
-                stop_pink_noise(pink_noise)
+                # stop_pink_noise(pink_noise)
                 selected_sound.play()
                 stim_start_time = current_time
                 stim_duration = selected_sound.getDuration()
@@ -182,10 +198,12 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
         stop_pink_noise(pink_noise)
         print("Riproduco l'allarme.")
         send_trigger(AS_TRIG)
+        alarm = sound.Sound(alarm_path)
         alarm.play()
         core.wait(alarm.getDuration())
         print("Premi la barra spaziatrice per l'avvio del questionario...")
-        event.waitKeys(keyList=['space'])
+        # event.waitKeys(keyList=['space'])
+        kb.waitKeys(keyList=['space'])
         print("Avvio del questionario...")
         dreamquestrc(participant_id, session, sex, output_directory, fs=48000)
 
@@ -193,6 +211,27 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
 
 
 def main():
+    
+    # widthPix = 1920  # screen width in px
+    # heightPix = 1080  # screen height in px
+    # monitorwidth = 54.3  # monitor width in cm
+    # viewdist = 60.  # viewing distance in cm
+    # #monitorname = 'CH7210'
+    # monitorname = 'DP-6'
+    # # scrn = 1  # 0 to use main screen, 1 to use external screen
+    # # widthPix = 2560  # screen width in px
+    # # heightPix = 1440  # screen height in px
+    # # monitorwidth = 28.04  # monitor width in cm (puoi mantenere questo valore se è corretto)
+    # # viewdist = 60.  # viewing distance in cm (puoi mantenere questo valore se è corretto)
+    # # monitorname = 'MacBook Pro 13"'
+    # scrn = 0 
+    # mon = monitors.Monitor(monitorname, width=monitorwidth, distance=viewdist)
+    # mon.setSizePix((widthPix, heightPix))
+    
+    # win = visual.Window(fullscr=False, size=(widthPix, heightPix), color="grey",
+    #                 units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
+    #                 winType="pyglet")
+    
     win = visual.Window(fullscr=False, color="black", units="norm")
     start_eeg_recording()
 
@@ -237,7 +276,8 @@ def main():
                 print(f"Stimolazione completata. Totale stimolazioni: {stimulation_count}")
                 if stimulation_count < max_stimulations:
                     print("Premi 'C' per continuare con la prossima stimolazione o 'Q' per terminare.")
-                    keys = event.waitKeys(keyList=['c', 'q'])
+                    # keys = event.waitKeys(keyList=['c', 'q'])
+                    keys = kb.waitKeys(keyList=['c', 'q'])
                     if 'q' in keys:
                         print("Uscita richiesta dall'utente.")
                         break
