@@ -37,7 +37,7 @@ def get_meta_night():
     dlg = gui.Dlg(title='REMEDY-Wake Task')
     dlg.addField("Participant ID:")
     dlg.addField("Session:", choices=['1', '2'])
-    dlg.addField("Gender", choices=['M', 'F'])
+    dlg.addField("Gender", choices=['Male', 'Female'])
 
     params = dlg.show()
 
@@ -102,7 +102,7 @@ def wait_kbd_emo(kb, okKeys=["space", "escape"]):
         else:
             return myKey
     elif check_os() in ['Windows', 'macOS']:
-        myKey = event.waitKeys(keyList=okKeys)
+        myKey = event.waitKeys(keyList=okKeys)[0]
         if myKey == ["space"]:
             return
         elif myKey == ["escape"]:

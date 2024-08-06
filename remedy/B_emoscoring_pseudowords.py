@@ -6,59 +6,64 @@ if check_os() in ['Linux']:
 from config.config import read_config
 import os
 import os.path as op
-import time
+import random
 import pandas as pd
 from utils.common_functions import wait_kbd_emo, get_meta, show, str2num
 from psychopy import visual, core, event, monitors, sound
 from psychopy.hardware import keyboard
 
-def save_emotion_scores(names, vals, aros, disting, famil, rips, output_directory, subject_id, session):
+def save_emotion_scores(names, vals, aros, output_directory, subject_id, session):
     df = pd.DataFrame({
         'Audio': names,
         'Valence': vals,
         'Arousal': aros,
-        'distinguibility': disting,
-        'familiarity': famil,
-        'ripetition': rips
 
     })
-    df.to_csv(op.join(output_directory, f"AUDIO_EMO_SCORING_Pp{subject_id}_s_{session}.csv"), index=False)
+    df.to_csv(op.join(output_directory, f"emoscoring_PSEUDOWORDS_Pp{subject_id}_s_{session}.csv"), index=False)
 
 def main():
     config = read_config()
     parent_dir = config['paths']['parent']
-    audio_combinations = op.join(parent_dir, 'combinations', 'audio_commands.csv')
-    audio_df = pd.read_csv(audio_combinations, sep=';')
+    data_dir = op.join(parent_dir, 'data', 'remedy_data')
+    all_combinations_path =  op.join(parent_dir, 'combinations', 
+                                     'all_combinations_pseudo_simvid.csv')
+    all_combinations_df = pd.read_csv(all_combinations_path)
 
     outputname = get_meta()
     subject_id = outputname[0]
     session = int(outputname[1])
 
-    data_dir = op.join(parent_dir, 'data', 'remedy_data')
-    # base_audio_path = op.join(data_dir,'audio_files')
-    base_audio_path = op.join(data_dir, 'modified_audios_normalized')
-    audio_paths = [op.join(base_audio_path, f'modified_audio_{i}.wav') for i in range(1, 22)]
+    # Filtra il DataFrame per subject_id e session
+    filtered_df = all_combinations_df[(all_combinations_df['Participant_ID'] == subject_id) & 
+                                      (all_combinations_df['Session'] == session)]
+    
+    # Ottieni i percorsi delle pseudoparole
+    audio_paths = filtered_df['Pseudo'].tolist()
+    print(audio_paths)
 
     output_directory = op.join(parent_dir, 'data', 'output_wake')
     os.makedirs(output_directory, exist_ok=True)
 
-    sounds = [sound.Sound(audio) for audio in audio_paths]
+    sounds = [sound.Sound(audio) for audio in audio_paths]  
 
     names = []
     vals = []
     aros = []
-    disting = []  
-    famil = []
-    audios = []
-    rips = ['0']
 
-    widthPix = 1920  # screen width in px
-    heightPix = 1080  # screen height in px
-    monitorwidth = 54.3  # monitor width in cm
-    viewdist = 60.  # viewing distance in cm
-    monitorname = 'CH7210'
-    #monitorname = 'DP-6'
-    scrn = 1  # 0 to use main screen, 1 to use external screen
+
+    # widthPix = 1920  # screen width in px
+    # heightPix = 1080  # screen height in px
+    # monitorwidth = 54.3  # monitor width in cm
+    # viewdist = 60.  # viewing distance in cm
+    # monitorname = 'CH7210'
+    # #monitorname = 'DP-6'
+    # scrn = 1  # 0 to use main screen, 1 to use external screen
+    widthPix = 2560  # screen width in px
+    heightPix = 1440  # screen height in px
+    monitorwidth = 28.04  # monitor width in cm (puoi mantenere questo valore se è corretto)
+    viewdist = 60.  # viewing distance in cm (puoi mantenere questo valore se è corretto)
+    monitorname = 'MacBook Pro 13"'
+    scrn = 0 
     mon = monitors.Monitor(monitorname, width=monitorwidth, distance=viewdist)
     mon.setSizePix((widthPix, heightPix))
 
@@ -76,10 +81,10 @@ def main():
     image_dir = op.join(data_dir, 'img_instructions')
 
     # Percorsi completi per le immagini
-    instr0_path = op.join(image_dir, 'instr0_audio.png')
+    instr0_path = op.join(image_dir, 'instr1_pseudo.png')
     end_path = op.join(image_dir, 'end.png')
-    instr2_path = op.join(image_dir, 'instr2.png')
-    instr3_path = op.join(image_dir, 'instr3.png')
+    instr2_path = op.join(image_dir, 'instr2_pseudo.png')
+    instr3_path = op.join(image_dir, 'instr3_pseudo.png')
     valSAM_path = op.join(image_dir, 'valSAM.png')
     aroSAM_path = op.join(image_dir, 'aroSAM.png')
     slideBrk_path_1 = op.join(image_dir, 'prima_s.png')
@@ -105,7 +110,6 @@ def main():
 
 
     # --------------------------  INSTRUCTIONS  --------------------------
-
     show(slide_instr)
     wait_kbd_emo(kb)
 
@@ -116,87 +120,47 @@ def main():
     wait_kbd_emo(kb)
 
 
-    show(slideBrk_1)
-    core.wait(5)
+    for n in range(len(audio_paths)):
 
-    #prima serie
-    for index, snd in enumerate(sounds):
-        slide_audio = visual.TextStim(win, text=f"Traccia {index + 1}", font='Calibri', units="norm", pos=(0, 0), color="black")
-        show(slide_audio)
-        # snd.play()
-        # #core.wait(snd.getDuration())
-        # core.wait(5)
-        # play_sound_in_fragments(snd)
-        for _ in range(2):
-            snd.play()
-            core.wait(snd.getDuration())
-            snd.stop()
-        core.wait(0.5)
+        timer = core.Clock()  # TESTING PURPOSES ONLY - Image rating timing
+
         show(fixcross)
-        core.wait(3)
+        core.wait(1.)
+        sounds[n].play()
+        core.wait(sounds[n].getDuration())
+        sounds[n].stop()
+        names.append(audio_paths[n]) 
 
-    #seconda serie
-    show(slideBrk_2)
-    core.wait(5)
-
-    #seconda serie
-    for nAudio, snd in enumerate(sounds):
+        # Valence rating
         show(fixcross)
-        core.wait(1)
-        slide_audio = visual.TextStim(win, text=f"Traccia {nAudio + 1}", font='Calibri', units="norm", pos=(0, 0), color="black")
-        show(slide_audio)
-
-        for _ in range(2):
-            snd.play()
-            core.wait(snd.getDuration())
-            snd.stop()
-        core.wait(0.5)
-  
-        dist.draw()
-        win.flip()
-        disting.append(wait_kbd_emo(kb, okKeys=emoKeys))
-
-        fam.draw()
-        win.flip()
-        famil.append(wait_kbd_emo(kb, okKeys=emoKeys))
-
-
-        if nAudio > 0:
-            rip.draw()
-            win.flip()
-            rips.append(wait_kbd_emo(kb, okKeys=emoKeys))
-
+        core.wait(1.)
         slide_val = visual.TextStim(win, text=f"Valenza",font='Calibri', units="norm", pos=(0, 0.6), color="black")
         slide_val.draw()
         valSAM.draw()
         win.flip()
-        vals.append(wait_kbd_emo(kb, okKeys=emoKeys))
+        vals_resp = wait_kbd_emo(kb, okKeys=emoKeys)
+        print(vals_resp)
+        vals.append(vals_resp)
 
+
+        # Arousal rating
+        show(fixcross)
         slide_ar = visual.TextStim(win, text=f"Intensità Emotiva", font='Calibri', units="norm", pos=(0, 0.6), color="black")
         slide_ar.draw()
         aroSAM.draw()
         win.flip()
-        aros.append(wait_kbd_emo(kb, okKeys=emoKeys))
-        names.append(audio_paths[nAudio])
+        aros_resp = wait_kbd_emo(kb, okKeys=emoKeys)
+        print(aros_resp)    
+        aros.append(aros_resp)
 
-        print(names)
-        print(disting)
-        print(aros)
-        print(famil)
-        print(rips)
-        print(vals)
 
     show(slide_end)
     core.wait(2)
     win.close()
-    if not (len(names) == len(vals) == len(aros) == len(disting) == len(famil) == len(rips)):
-        print("Errore: le liste non hanno la stessa lunghezza.")
-    else:
-        save_emotion_scores(names, vals, aros, disting, famil, rips, output_directory, subject_id, session)
+    save_emotion_scores(names, vals, aros, output_directory, subject_id, session)
 
     # --------------------------  EXPERIMENT END  --------------------------
 
 if __name__ == "__main__":
     main()
-
 

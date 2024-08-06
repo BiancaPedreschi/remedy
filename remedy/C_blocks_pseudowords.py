@@ -37,19 +37,35 @@ def create_blocks(category, cat_dir):
     random.shuffle(items_neg)
     random.shuffle(items_neu)
 
+    # Ensure we have enough items to create 3 blocks of 11 images each
+    min_length = min(len(items_pos), len(items_neg), len(items_neu))
+    items_pos = items_pos[:min_length]
+    items_neg = items_neg[:min_length]
+    items_neu = items_neu[:min_length]
+
     items_all = [items_pos, items_neg, items_neu]
 
     # Split the items into a new lists with sequentially ordered valenced items (pos-neg-neu-pos-neg-neu....)
     items_mixed = [item for sublist in zip(*items_all) for item in sublist]
 
+    # Ensure we have exactly 33 items
+    items_mixed = items_mixed[:33]
+
+    # Divide the items into 3 blocks of 11 images each
     items_block1 = items_mixed[:11]
     items_block2 = items_mixed[11:22]
-    items_block3 = items_mixed[22:]
+    items_block3 = items_mixed[22:33]
+
+    # Print the lengths of each block for debugging
+    print(f"Block 1: {len(items_block1)} images")
+    print(f"Block 2: {len(items_block2)} images")
+    print(f"Block 3: {len(items_block3)} images")
 
     # Reshuffle the items list to get a random sequence
     random.shuffle(items_block1)
     random.shuffle(items_block2)
     random.shuffle(items_block3)
+
     return items_block1, items_block2, items_block3
 
 
@@ -72,19 +88,27 @@ def main():
     #________________-   MONITOR   -
 
 
-    widthPix = 1920  # screen width in px
-    heightPix = 1080  # screen height in px
-    monitorwidth = 54.3  # monitor width in cm
-    viewdist = 60.  # viewing distance in cm
-    monitorname = 'CH7210'
-    #monitorname = 'DP-6'
-    scrn = 1  # 0 to use main screen, 1 to use external screen
+    # widthPix = 1920  # screen width in px
+    # heightPix = 1080  # screen height in px
+    # monitorwidth = 54.3  # monitor width in cm
+    # viewdist = 60.  # viewing distance in cm
+    # monitorname = 'CH7210'
+    # #monitorname = 'DP-6'
+    # scrn = 1  # 0 to use main screen, 1 to use external screen
+
+    widthPix = 2560  # screen width in px
+    heightPix = 1440  # screen height in px
+    monitorwidth = 28.04  # monitor width in cm (puoi mantenere questo valore se è corretto)
+    viewdist = 60.  # viewing distance in cm (puoi mantenere questo valore se è corretto)
+    monitorname = 'MacBook Pro 13"'
+    scrn = 0 
+
     mon = monitors.Monitor(monitorname, width=monitorwidth, distance=viewdist)
     mon.setSizePix((widthPix, heightPix))
 
-    win = visual.Window(fullscr=False, size=(widthPix, heightPix), color="grey", 
+    win = visual.Window(fullscr=True, size=(widthPix, heightPix), color="grey",
                         units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
-                        winType="pyglet") 
+                        winType="pyglet")
     
     if check_os() in ['Linux']:
         kb = keyboard.Keyboard(device=-1)
@@ -97,7 +121,7 @@ def main():
     image_dir = op.join(data_dir, 'img_instructions')
 
     # Percorsi completi per le immagini
-    instr1_path = os.path.join(image_dir, 'instr1_blocchi.png')
+    instr1_path = os.path.join(image_dir, 'instr1_blocchi_pseudoparole.png')
     end_path = os.path.join(image_dir, 'end.png')
 
     slide_instr = visual.ImageStim(win, image=instr1_path, units="pix", pos=(0, 0))
@@ -111,12 +135,15 @@ def main():
     # image_duration = 1.5
     # block_interval = 10.0
     
-    image_duration = 2
-    block_interval = 5
+    image_duration = 2.5
+    block_interval = 10
 
 
     all_combinations_path =  op.join(parent_dir, 'combinations', 
-                                     'all_combinations_audio.csv')
+                                     'all_combinations_pseudo_simvid.csv')
+   
+    
+    
     all_combinations_df = pd.read_csv(all_combinations_path)
 
     participant_combinations = all_combinations_df.loc[all_combinations_df['Participant_ID'] == subject_id]
@@ -137,7 +164,7 @@ def main():
     all_blocks_with_categories = list(zip(all_categories, all_blocks))
 
     # Create a list with the corresponding audio for each block
-    all_blocks_audio_paths = [participant_combinations[participant_combinations['Category'] == cat]['Audio'].iloc[0] for cat in
+    all_blocks_audio_paths = [participant_combinations[participant_combinations['Category'] == cat]['Pseudo'].iloc[0] for cat in
                        all_categories]
     sounds = [sound.Sound(audio) for audio in all_blocks_audio_paths]
         
@@ -162,7 +189,7 @@ def main():
 
             # Navigate in the folder of the block
             block_folder = op.join(cath_dir, category)
-            slide_block = visual.TextStim(win, text=f"BLOCK {nblock + 1}", font='Calibri', units="norm", pos=(0, 0.2), color="black")
+            slide_block = visual.TextStim(win, text=f"BLOCK {nblock + 1}",font="Calibri", units="norm", pos=(0, 0.2), color="black")
             show(slide_block)
             core.wait(block_interval)
 
@@ -179,6 +206,8 @@ def main():
                 img = visual.ImageStim(win, image=img_path, units="norm", pos=(0, 0))
                 show(img)
                 core.wait(image_duration)
+                show(fixcross)
+                core.wait(1)
                 
                 if cycle == 0:
                     log_imgnames[nblock].append(imgname)
@@ -188,9 +217,8 @@ def main():
 
                 counter += 1
 
-                if counter > 2: # TESTING PURPOSES ONLY - Limits block to X images
+                if counter > 9: # TESTING PURPOSES ONLY - Limits block to X images
                     break
-
 
         # --------------------------  EXPERIMENT END  --------------------------
     df = pd.DataFrame({
@@ -203,11 +231,12 @@ def main():
     })
 
     df.to_csv(op.join(output_directory, 
-                      f"BLOCKS_Sounds_Pp{subject_id}_session_{session}.csv"),
+                      f"BLOCKS_Pseudowords_Pp{subject_id}_session_{session}.csv"),
               index=False)
     show(slide_end)
     core.wait(2)
     win.close()
+
 
 if __name__ == "__main__":
     main()

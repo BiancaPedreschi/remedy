@@ -1,5 +1,5 @@
 from psychopy import core, event, visual, sound, gui
-from questionnaire.questlist import questlist
+from .questlist import questlist
 import os
 from datetime import datetime
 import numpy as np
@@ -198,4 +198,6 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
         core.quit()
 
 if __name__ == "__main__":
-    dreamquestrc("001", 1, "Female", "./output", 1)
+    dreamquestrc()
+
+# dreamquestrc("001", 1, "Female", "./output", fs=48000)

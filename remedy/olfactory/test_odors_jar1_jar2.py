@@ -36,9 +36,12 @@ def save_emotion_scores(names, vals, aros, commands, space_press_times,
 
 def main(data_dir, olfm, olf_commands, odor_names):
     
-    widthPix = 1920  # screen width in px
-    heightPix = 1080  # screen height in px
-    monitorwidth = 54.3  # monitor width in cm
+    #widthPix = 1920  # screen width in px
+    #heightPix = 1080  # screen height in px
+    widthPix = 1440  # screen width in px
+    heightPix = 900  # screen height in px
+    # monitorwidth = 54.3  # monitor width in cm
+    monitorwidth = 34.036  # monitor width in cm
     viewdist = 60.  # viewing distance in cm
     # monitorname = 'CH7210'
     monitorname = 'DP-6'
@@ -148,7 +151,7 @@ def main(data_dir, olfm, olf_commands, odor_names):
         # Primo monitoraggio: quando l'utente inizia a sentire l'odore
         first_press_detected = False
         while experiment_clock.getTime() < 30.:
-            if not  first_press_detected:
+            if not first_press_detected:
                 slide_time1.draw()
                 win.flip()
                 keyName = wait_kbd_emo(kb, okKeys=["right", "escape"])
@@ -195,11 +198,11 @@ def main(data_dir, olfm, olf_commands, odor_names):
         valSAM.draw()
         win.flip()
         resp = wait_kbd_emo(kb, okKeys=emoKeys)
-        print(f"Resp: {resp.name}")
+        print(f"Resp: {resp}")
         # if isinstance(resp, list) and len(resp) > 0:
         #     resp = resp[0]
         # vals[nOdor] = str2num_2(resp)
-        vals.append(resp.name)
+        vals.append(resp)
 
         # Arousal rating
         aroSAM.draw()
@@ -209,7 +212,7 @@ def main(data_dir, olfm, olf_commands, odor_names):
         # if isinstance(resp, list) and len(resp) > 0:
         #     resp = resp[0]
         # aros[nOdor] = str2num_2(resp)
-        aros.append(resp.name)
+        aros.append(resp)
 
         show(fixcross)
         olfm.write('S 0')

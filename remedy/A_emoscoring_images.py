@@ -16,7 +16,7 @@ config = read_config()
 parent_dir = config['paths']['parent']
 
 all_combinations_path =  op.join(parent_dir, 'combinations', 
-                                 'all_combinations.csv')
+                                 'all_combinations_pseudo_simvid.csv')
 all_combinations_df = pd.read_csv(all_combinations_path)
 
 imgList = []
@@ -39,17 +39,23 @@ for category in participant_current_categories:
     imgList.extend(category_images)
 
 random.shuffle(imgList)
-imgList = imgList[:10]
+imgList = imgList[:98]
 
 #________________-   HARDWARE PARAMETER -
 
-widthPix = 1920  # screen width in px
-heightPix = 1080  # screen height in px
-monitorwidth = 54.3  # monitor width in cm
-viewdist = 60.  # viewing distance in cm
-# monitorname = 'CH7210'
-monitorname = 'DP-6'
-scrn = 0  # 0 to use main screen, 1 to use external screen
+# widthPix = 1920  # screen width in px
+# heightPix = 1080  # screen height in px
+# monitorwidth = 54.3  # monitor width in cm
+# viewdist = 60.  # viewing distance in cm
+# # monitorname = 'CH7210'
+# monitorname = 'DP-6'
+# scrn = 1  # 0 to use main screen, 1 to use external screen
+widthPix = 2560  # screen width in px
+heightPix = 1440  # screen height in px
+monitorwidth = 28.04  # monitor width in cm (puoi mantenere questo valore se è corretto)
+viewdist = 60.  # viewing distance in cm (puoi mantenere questo valore se è corretto)
+monitorname = 'MacBook Pro 13"'
+scrn = 0 
 mon = monitors.Monitor(monitorname, width=monitorwidth, distance=viewdist)
 mon.setSizePix((widthPix, heightPix))
 
@@ -145,13 +151,13 @@ def main ():
         img.draw()
         valSAM.draw()
         win.flip()
-        vals[n] = str2num(wait_kbd_emo(kb, okKeys=emoKeys))
+        vals[n] = wait_kbd_emo(kb, okKeys=emoKeys)
 
         # Arousal rating
         img.draw()
         aroSAM.draw()
         win.flip()
-        aros[n] = str2num(wait_kbd_emo(kb, okKeys=emoKeys))
+        aros[n] = wait_kbd_emo(kb, okKeys=emoKeys)
 
         #  timing of imag rating
         counter += 1
