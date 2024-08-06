@@ -170,6 +170,6 @@ exe/
 *.png
 *.DS_Store
 *.json
-
+output_NightStim/
 
 
