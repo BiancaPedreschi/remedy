@@ -169,8 +169,7 @@ exe/
 *.jpeg
 *.png
 *.DS_Store
-*.wav
 *.json
-*.csv
+
 
 
