@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import signal
-import soundfile as sf
+import scipy.io.wavfile as sw
+# import soundfile as sf
 
 def generate_pink_noise(duration, sample_rate=44100):
     samples = int(duration * sample_rate)
@@ -26,6 +27,7 @@ pink_noise = generate_pink_noise(duration, sample_rate)
 
 # Salva il file audio
 output_file = "pink_noise_60min.wav"
-sf.write(output_file, pink_noise, sample_rate)
+# sf.write(output_file, pink_noise, sample_rate)
+sw.write(output_file, sample_rate, pink_noise)
 
 print(f"File di pink noise generato: {output_file}")

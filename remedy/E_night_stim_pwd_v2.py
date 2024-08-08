@@ -13,6 +13,7 @@ from psychopy import prefs
 # from psychtoolbox import audio, GetSecs
 import sounddevice as sd
 import scipy.io.wavfile as sw
+print(os.getcwd())
 
 # prefs.hardware['audioLib'] = ['ptb', 'pyo', 'pygame']
 prefs.hardware['audioLib'] = ['sounddevice', 'pyo', 'pygame', 'PTB']
@@ -52,10 +53,13 @@ def select_stimuli(audio_paths):
     control = [path for path in audio_paths if path not in selected][0]
     return selected[0], selected[1], control
 
-def play_pink_noise(pink_noise_file):
+def play_pink_noise(pink_noise):
     # sd.default.device = 0
     # pink_noise = sound.Sound(pink_noise_file, loops=-1)  # -1 per loop infinito
-    pink_noise = sw.read(pink_noise_file)[1]
+    # pink_noise = sw.read(pink_noise_file)[1]
+    # if stream.channels == 2:
+    #     pink_noise = np.stack((pink_noise, pink_noise), 1)
+    # stream.write(pink_noise)
     sd.play(pink_noise, loop=True)
     # pink_noise.play()
     return pink_noise
@@ -226,7 +230,7 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
     return "continue"
 
 
-def main():
+def main(headphones_dev, speakers_dev):
     
     # widthPix = 1920  # screen width in px
     # heightPix = 1080  # screen height in px
@@ -247,7 +251,20 @@ def main():
     # win = visual.Window(fullscr=False, size=(widthPix, heightPix), color="grey",
     #                 units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
     #                 winType="pyglet")
+    
     sd.default.device = 0
+    # if headphones_dev == speakers_dev:
+    #     hdp_stream = sd.Stream(samplerate=44100, device=headphones_dev, 
+    #                            dtype='float32')
+    #     hdp_stream.start()
+    #     spk_stream = hdp_stream
+    # else:
+    #     hdp_stream = sd.OutputStream(samplerate=44100, device=headphones_dev, 
+    #                            dtype='float32')
+    #     hdp_stream.start()
+    #     spk_stream = sd.Stream(samplerate=44100, device=speakers_dev, 
+    #                            dtype='float32')
+    #     spk_stream.start()
     
     win = visual.Window(fullscr=False, color="black", units="norm")
     start_eeg_recording()
@@ -260,7 +277,8 @@ def main():
 
     config = read_config()
     parent_dir = config['paths']['parent']
-    all_combinations_path = os.path.join(parent_dir, 'combinations', 'all_combinations_pseudo_final.csv')
+    all_combinations_path = os.path.join(parent_dir, 'combinations', 
+                                         'all_combinations_pseudo_final.csv')
     all_combinations_df = pd.read_csv(all_combinations_path)
     filtered_df = all_combinations_df[(all_combinations_df['Participant_ID'] == participant_id) & 
                                       (all_combinations_df['Session'] == session)]
@@ -273,7 +291,13 @@ def main():
     print(f"Stimolo di controllo (non usato): {os.path.basename(control_stimulus)}")
 
     pink_noise_file = "pink_noise_60min.wav"
-    pink_noise = play_pink_noise(pink_noise_file)
+    # Read the pink noise file
+    pink_noise = sw.read(pink_noise_file)[1]
+    pink_noise = pink_noise.astype('float32')
+    # Double channels if stereo output
+    # if hdp_stream.channels == 2:
+    #     pink_noise = np.stack((pink_noise, pink_noise), 1)
+    pink_noise = play_pink_noise(pink_noise)
     print("Pink noise avviato.")
 
 
@@ -299,7 +323,7 @@ def main():
                         print("Uscita richiesta dall'utente.")
                         break
                     stop_pink_noise(pink_noise)
-                    pink_noise = play_pink_noise(pink_noise_file)
+                    pink_noise = play_pink_noise(pink_noise)
 
             else:
                 print(f"Risultato inaspettato: {result}")
@@ -312,4 +336,4 @@ def main():
         win.close()
 
 if __name__ == "__main__":
-    main()
+    main(0, 5)

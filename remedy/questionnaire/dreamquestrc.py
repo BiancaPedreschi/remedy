@@ -56,11 +56,12 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
     print("Premi 'q' in qualsiasi momento per interrompere il questionario e salvare i dati.")
 
 
-    stop_recording_event = threading.Event()
-    recording_thread = threading.Thread(target=start_recording, args=(duration, fs, channels, stop_recording_event, recorded_data, device_index))
-    recording_thread.start()
+    # stop_recording_event = threading.Event()
+    # recording_thread = threading.Thread(target=start_recording, args=(duration, fs, channels, stop_recording_event, recorded_data, device_index))
+    # recording_thread.start()
 
     question_count = 0
+    answers = []
     try:
         for qn in range(1, 16):
             sq = f"{qn:02d}"
@@ -68,9 +69,18 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
 
             # Riproduci l'audio della domanda
             if f'qst{sq}' in questions:
+                if qn != 1:
+                    answers.append(np.expand_dims(answ[~np.isnan(answ)], 1))
                 question = sw.read(questions[f'qst{sq}'])[1]
-                sd.play(question)
+                qst = np.full((question.shape[0], 1), np.nan)
+                sd.playrec(question, samplerate=44100, channels=1, 
+                           dtype='int16', out=qst, input_mapping=np.array([1]),
+                           output_mapping=np.array([1, 2]))
+                answ = np.full((60*10*44100, 1), np.nan)
                 sd.wait()
+                answers.append(qst)
+                sd.rec(samplerate=44100, channels=1, out=answ, dtype='int16')
+                # sd.wait()
                 # questions[f'qst{sq}'].play()
                 # core.wait(questions[f'qst{sq}'].getDuration())
             
@@ -97,9 +107,19 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
                 
                 # Riproduci l'audio corrispondente
                 if audio_key in questions:
+                    answers.append(np.expand_dims(answ[~np.isnan(answ)], 1))
                     print(f"Riproducendo audio: {audio_key}")
-                    sd.play(sw.read(questions[audio_key])[1])
+                    question = sw.read(questions[audio_key])[1]
+                    qst = np.full((question.shape[0], 1), np.nan)
+                    sd.playrec(question, samplerate=44100, channels=1, 
+                               dtype='int16', out=qst, 
+                               input_mapping=np.array([1]),
+                               output_mapping=np.array([1, 2]))
+                    answ = np.full((60*10*44100, 1), np.nan)
                     sd.wait()
+                    answers.append(qst)
+                    answ = sd.rec(samplerate=44100, channels=1, out=answ, 
+                                  dtype='int16')
                     # questions[audio_key].play()
                     # core.wait(questions[audio_key].getDuration())
                 else:
@@ -152,32 +172,47 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
                 responses['qst10'] = np.full((1, 5), np.nan)
                 sensi = ['Visivo', 'Uditivo', 'Tattile', 'Olfattivo', 'Gustativo']
                 for ns, senso in enumerate(sensi, start=1):
-                    sd.play(sw.read(questions[f'qst10_{ns}'])[1])
+                    answers.append(np.expand_dims(answ[~np.isnan(answ)], 1))
+                    question = sw.read(questions[f'qst10_{ns}'])[1]
+                    qst = np.full((question.shape[0], 1), np.nan)
+                    sd.playrec(question, samplerate=44100, channels=1, 
+                               dtype='int16', out=qst, 
+                               input_mapping=np.array([1]),
+                               output_mapping=np.array([1, 2]))
+                    answ = np.full((60*10*44100, 1), np.nan)
                     sd.wait()
+                    answers.append(qst)
+                    answ = sd.rec(samplerate=44100, channels=1, out=answ, 
+                                  dtype='int16')
+                    # sd.wait()
                     # questions[f'qst10_{ns}'].play()
                     # core.wait(questions[f'qst10_{ns}'].getDuration())
                     dlg = gui.Dlg(title=f"Domanda 10.{ns}: {senso}")
                     dlg.addText(f"Hai avuto un'esperienza {senso.lower()}?")
                     dlg.addField('Risposta:', choices=['Sì', 'No'])
                     responses['qst10'][0, ns - 1] = 1 if dlg.show()[0] == 'Sì' else 0
-            
+                    
             question_count += 1
             print(f"Domanda {sq} completata")
             print(f"Risposta salvata: {responses.get(f'qst{sq}', 'Non disponibile')}")
 
+        answers.append(np.expand_dims(answ[~np.isnan(answ)], 1))
+        sd.stop()
         print(f"Totale domande presentate: {question_count}")
 
     except Exception as e:
         print(f"Si è verificato un errore: {e}")
     finally:
         # Ferma la registrazione
-        stop_recording_event.set()
-        recording_thread.join()
-
+        # stop_recording_event.set()
+        # recording_thread.join()
+        recorded_data = np.vstack(answers)
+        
         # Salva la registrazione audio
-        if recorded_data:
+        if recorded_data.shape[0] > 0:
             try:
-                audio_file = save_recording_audio(recorded_data[0], outpath, participant_id, session, fs)
+                audio_file = save_recording_audio(recorded_data, outpath, participant_id, session, fs)
+                # audio_file = save_recording_audio(recorded_data[0], outpath, participant_id, session, fs)
                 if audio_file and os.path.exists(audio_file):
                     print(f"File audio creato: {audio_file}")
                 else:
