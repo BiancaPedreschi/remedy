@@ -7,11 +7,14 @@ import numpy as np
 import json
 import threading
 import importlib.util
-spec = importlib.util.spec_from_file_location("audio_recorder", op.join(os.getcwd(), 'remedy', 'utils', 'audio_recorder.py'))
-audio_recorder = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(audio_recorder)
-start_recording = audio_recorder.start_recording
-save_recording_audio = audio_recorder.save_recording_audio
+import sounddevice as sd
+import scipy.io.wavfile as sw
+from utils.audio_recorder import start_recording, save_recording_audio
+# spec = importlib.util.spec_from_file_location("audio_recorder", op.join(os.getcwd(), 'remedy', 'utils', 'audio_recorder.py'))
+# audio_recorder = importlib.util.module_from_spec(spec)
+# spec.loader.exec_module(audio_recorder)
+# start_recording = audio_recorder.start_recording
+# save_recording_audio = audio_recorder.save_recording_audio
 
 def colored_print(color, text):
     colors = {
@@ -36,7 +39,8 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
              'qst11', 'qst12', 'qst13', 'qst14', 'qst15']
     cmp = {'Female': ['', '', '', '', 'f', 'f', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'f'],
            'Male': ['', '', '', '', 'm', 'm', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'm']}
-    questions = {file: sound.Sound(os.path.join(datapath, f"{file}{cmp[sex][nx]}.wav")) for nx, file in enumerate(files)}
+    # questions = {file: sound.Sound(os.path.join(datapath, f"{file}{cmp[sex][nx]}.wav")) for nx, file in enumerate(files)}
+    questions = {file: os.path.join(datapath, f"{file}{cmp[sex][nx]}.wav") for nx, file in enumerate(files)}
 
     responses = {}
     
@@ -64,8 +68,11 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
 
             # Riproduci l'audio della domanda
             if f'qst{sq}' in questions:
-                questions[f'qst{sq}'].play()
-                core.wait(questions[f'qst{sq}'].getDuration())
+                question = sw.read(questions[f'qst{sq}'])[1]
+                sd.play(question)
+                sd.wait()
+                # questions[f'qst{sq}'].play()
+                # core.wait(questions[f'qst{sq}'].getDuration())
             
             # Controlla se l'utente vuole interrompere
             if event.getKeys(['q']):
@@ -91,8 +98,10 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
                 # Riproduci l'audio corrispondente
                 if audio_key in questions:
                     print(f"Riproducendo audio: {audio_key}")
-                    questions[audio_key].play()
-                    core.wait(questions[audio_key].getDuration())
+                    sd.play(sw.read(questions[audio_key])[1])
+                    sd.wait()
+                    # questions[audio_key].play()
+                    # core.wait(questions[audio_key].getDuration())
                 else:
                     print(f"Audio {audio_key} non trovato")
                 
@@ -143,8 +152,10 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
                 responses['qst10'] = np.full((1, 5), np.nan)
                 sensi = ['Visivo', 'Uditivo', 'Tattile', 'Olfattivo', 'Gustativo']
                 for ns, senso in enumerate(sensi, start=1):
-                    questions[f'qst10_{ns}'].play()
-                    core.wait(questions[f'qst10_{ns}'].getDuration())
+                    sd.play(sw.read(questions[f'qst10_{ns}'])[1])
+                    sd.wait()
+                    # questions[f'qst10_{ns}'].play()
+                    # core.wait(questions[f'qst10_{ns}'].getDuration())
                     dlg = gui.Dlg(title=f"Domanda 10.{ns}: {senso}")
                     dlg.addText(f"Hai avuto un'esperienza {senso.lower()}?")
                     dlg.addField('Risposta:', choices=['Sì', 'No'])

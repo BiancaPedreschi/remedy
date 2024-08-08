@@ -10,10 +10,12 @@ import random
 from psychopy import visual, core, sound, event, monitors
 from psychopy.hardware import keyboard
 from psychopy import prefs
-from psychtoolbox import audio, GetSecs
+# from psychtoolbox import audio, GetSecs
+import sounddevice as sd
+import scipy.io.wavfile as sw
 
 # prefs.hardware['audioLib'] = ['ptb', 'pyo', 'pygame']
-prefs.hardware['audioLib'] = ['PTB', 'sounddevice', 'pyo', 'pygame']
+prefs.hardware['audioLib'] = ['sounddevice', 'pyo', 'pygame', 'PTB']
 prefs.hardware['audioDevice'] = 'sysdefault'
 prefs.hardware['audioLatencyMode'] = 3
 
@@ -51,14 +53,18 @@ def select_stimuli(audio_paths):
     return selected[0], selected[1], control
 
 def play_pink_noise(pink_noise_file):
-    pink_noise = sound.Sound(pink_noise_file, loops=-1)  # -1 per loop infinito
-    pink_noise.play()
+    # sd.default.device = 0
+    # pink_noise = sound.Sound(pink_noise_file, loops=-1)  # -1 per loop infinito
+    pink_noise = sw.read(pink_noise_file)[1]
+    sd.play(pink_noise, loop=True)
+    # pink_noise.play()
     return pink_noise
 
 def stop_pink_noise(pink_noise):
-    if pink_noise:
-        pink_noise.stop()
-        pink_noise = None
+    # if pink_noise:
+    sd.stop()
+        # pink_noise.stop()
+        # pink_noise = None
     return pink_noise
 
 # def fade_sound(sound_obj, duration=0.1, fade_in=True, start_volume=0, end_volume=1):
@@ -117,14 +123,18 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
             if 'n' in keys:
                 stimulation_started = True
                 stop_pink_noise(pink_noise)
-                n2_sound = sound.Sound(n2_stimulus)
+                n2_sound = sw.read(n2_stimulus)[1]
                 selected_sound = n2_sound
+                # n2_sound = sound.Sound(n2_stimulus)
+                # selected_sound = n2_sound
                 print("Stimolazione N2 selezionata")
             elif 'w' in keys:
                 stimulation_started = True
                 stop_pink_noise(pink_noise)
-                rem_sound = sound.Sound(rem_stimulus)
+                rem_sound = sw.read(rem_stimulus)[1]
                 selected_sound = rem_sound
+                # rem_sound = sound.Sound(rem_stimulus)
+                # selected_sound = rem_sound
                 print("Stimolazione REM selezionata")
 
             if stimulation_started:
@@ -132,7 +142,7 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
                 next_sound_time = 0  # Resetta il tempo per il prossimo suono
                 send_trigger(BG_TRIG)
                 # stop_pink_noise(pink_noise)
-                print(f"File audio selezionato: {os.path.basename(selected_sound.fileName)}")
+                # print(f"File audio selezionato: {os.path.basename(selected_sound.fileName)}")
 
         if stimulation_started:
             # stop_pink_noise(pink_noise)
@@ -171,10 +181,11 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
             # Nel ciclo principale:
             if current_time >= next_sound_time:
                 # stop_pink_noise(pink_noise)
-                selected_sound.play()
+                # selected_sound.play()
+                sd.play(selected_sound)
                 stim_start_time = current_time
-                stim_duration = selected_sound.getDuration()
-                print(f"Durata stimolo: {stim_duration:.2f} secondi")  # Stampa la durata dello stimol
+                # stim_duration = selected_sound.getDuration()
+                # print(f"Durata stimolo: {stim_duration:.2f} secondi")  # Stampa la durata dello stimol
                 # Calcola un intervallo casuale tra 1.5 e 2.5 secondi
                 inter_stimulus_interval = random.uniform(1.5, 2.5)
                 print(f"Tempo atteso: {inter_stimulus_interval:.2f} secondi")
@@ -196,16 +207,21 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
     # Codice per l'allarme e il questionario
     if stimulation_started:
         stop_pink_noise(pink_noise)
+        sd.default.device = 5
         print("Riproduco l'allarme.")
         send_trigger(AS_TRIG)
-        alarm = sound.Sound(alarm_path)
-        alarm.play()
-        core.wait(alarm.getDuration())
+        alarm = sw.read(alarm_path)[1]
+        sd.play(alarm)
+        # alarm = sound.Sound(alarm_path)
+        # alarm.play()
+        core.wait(2) 
+        # core.wait(alarm.getDuration())
         print("Premi la barra spaziatrice per l'avvio del questionario...")
         # event.waitKeys(keyList=['space'])
         kb.waitKeys(keyList=['space'])
         print("Avvio del questionario...")
         dreamquestrc(participant_id, session, sex, output_directory, fs=48000)
+        sd.default.device = 0
 
     return "continue"
 
@@ -231,6 +247,7 @@ def main():
     # win = visual.Window(fullscr=False, size=(widthPix, heightPix), color="grey",
     #                 units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
     #                 winType="pyglet")
+    sd.default.device = 0
     
     win = visual.Window(fullscr=False, color="black", units="norm")
     start_eeg_recording()
