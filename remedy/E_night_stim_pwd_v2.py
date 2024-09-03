@@ -10,6 +10,8 @@ import random
 from psychopy import visual, core, sound, event, monitors
 from psychopy.hardware import keyboard
 from psychopy import prefs
+import parallel
+import time
 # from psychtoolbox import audio, GetSecs
 import sounddevice as sd
 import scipy.io.wavfile as sw
@@ -29,10 +31,39 @@ if check_os() in ['Linux']:
 elif check_os() in ['Windows', 'macOS']:
     kb = None
 
+# Inizializzazione della porta parallela
+address = 0x3EFC
+p = parallel.Parallel()
+
+def send_trigger(code, numlns=8):
+    """
+        Invia un codice di trigger convertito in binario tramite porta seriale.
+
+        Args:
+            code (int): Il codice numerico da inviare.
+            numlns (int, opzionale): Il numero di linee (o pin) da utilizzare
+            per la rappresentazione binaria del codice. Default è 8.
+
+        Returns:
+            None
+    """
+    trigger_bin = trgout(code, numlns)
+    print(f"Trigger inviato: {code}, binario: {trigger_bin}")
+    # Converti la lista binaria in un numero decimale
+    trigger_value = int(''.join(map(str, trigger_bin)), 2)
+    
+    # Invia il valore alla porta parallela, attende 10ms e poi resetta la porta
+    p.setData(trigger_value)
+    time.sleep(0.01)
+    p.setData(0)    
+
 # Definizione dei codici trigger
 RC_TRIG = 10  # Start Recording
-BG_TRIG = 20  # Start Experiment
+BG_TRIG = 20 # Start Experiment
+A_TRIG = 22 # Acoustic stimula
+S_TRIG = 28  # Sham Stimulation
 AS_TRIG = 30  # Alarm Sound
+I_TRIG = 26 # Interruption
 ED_TRIG = 40  # Stop Experiment
 
 def start_eeg_recording():
@@ -40,12 +71,8 @@ def start_eeg_recording():
     send_trigger(RC_TRIG)
 
 def stop_eeg_recording():
-    print("Arresto registrazione EEG e salvataggio dati")
+    print("Arresto registrazione EEG")
     send_trigger(ED_TRIG)
-
-def send_trigger(code, numlns=8):
-    trigger_bin = trgout(code, numlns)
-    print(f"Trigger inviato: {code}, binario: {trigger_bin}")
 
 def select_stimuli(audio_paths):
     selected = random.sample(audio_paths, 2)
@@ -78,7 +105,8 @@ def stop_pink_noise(pink_noise):
 #         core.wait(duration / steps)
 
 
-def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, parent_dir, pink_noise):
+def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus,
+                 parent_dir, pink_noise):
     # Carica i suoni
     # n2_sound = sound.Sound(n2_stimulus)
     # rem_sound = sound.Sound(rem_stimulus)
@@ -102,7 +130,8 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
     selected_sound = None
 
     stimulation_times = []
-    output_file = os.path.join(output_directory, f"stimulation_times_{participant_id}_{session}.csv")
+    output_file = os.path.join(output_directory,
+                                f"stim_times_{participant_id}_{session}.csv")
 
     # Avvia il pink noise a volume basso
     # pink_noise.setVolume(0.9)  # Volume iniziale basso
@@ -140,7 +169,7 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
             if stimulation_started:
                 stimulation_timer.reset()
                 next_sound_time = 0  # Resetta il tempo per il prossimo suono
-                send_trigger(BG_TRIG)
+                send_trigger(A_TRIG)
                 # stop_pink_noise(pink_noise)
                 # print(f"File audio selezionato: {os.path.basename(selected_sound.fileName)}")
 
@@ -160,20 +189,20 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
             # keys = event.getKeys(['q', 'r', 'escape', 'esc'])
             keys = kb.getKeys(['q', 'r', 'escape', 'esc'])
             if 'escape' in keys or 'esc' in keys:
-                send_trigger(ED_TRIG)
+                stop_eeg_recording()
                 return "quit"
             if 'q' in keys:
                 print("Stimolazione interrotta. Tornando alla selezione dello stimolo.")
                 stimulation_started = False
-                send_trigger(ED_TRIG)
                 stimulation_timer.reset()
+                send_trigger(I_TRIG)
                 print(stimulation_timer.getTime())
                 continue  # Torna all'inizio del ciclo while
             elif 'r' in keys:
                 if elapsed_time >= min_duration:
                     print("Richiesta di terminare la stimolazione.")
-                    send_trigger(ED_TRIG)
-                    stop_pink_noise(pink_noise)
+                    stop_pink_noise(pink_noise) 
+                    send_trigger(I_TRIG)
                     break
                 else:
                     print(f"Non puoi terminare la stimolazione prima di {min_duration} secondi.")
@@ -260,7 +289,8 @@ def main():
 
     config = read_config()
     parent_dir = config['paths']['parent']
-    all_combinations_path = os.path.join(parent_dir, 'combinations', 'all_combinations_pseudo_final.csv')
+    all_combinations_path = os.path.join(parent_dir, 'combinations',
+                                          'all_combinations_pseudo_final.csv')
     all_combinations_df = pd.read_csv(all_combinations_path)
     filtered_df = all_combinations_df[(all_combinations_df['Participant_ID'] == participant_id) & 
                                       (all_combinations_df['Session'] == session)]
@@ -275,6 +305,7 @@ def main():
     pink_noise_file = "pink_noise_60min.wav"
     pink_noise = play_pink_noise(pink_noise_file)
     print("Pink noise avviato.")
+    send_trigger(BG_TRIG)
 
 
     stimulation_count = 0
@@ -282,8 +313,9 @@ def main():
 
     try:
         while stimulation_count < max_stimulations:
-            print(f"Iniziando stimolazione {stimulation_count + 1} di {max_stimulations}")
-            result = manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, parent_dir, pink_noise)
+            print(f"Inizio stimolazione {stimulation_count + 1} di {max_stimulations}")
+            result = manual_stim(win, participant_id, session, sex, n2_stimulus,
+                                  rem_stimulus, parent_dir, pink_noise)
             
             if result == "quit":
                 print("Uscita richiesta dall'utente.")
