@@ -1,6 +1,5 @@
 from utils.common_functions import check_os, get_meta_night
 from config.config import read_config
-from questionnaire.trout import trgout
 from questionnaire.dreamquestrc import dreamquestrc
 import numpy as np
 import csv
@@ -13,7 +12,8 @@ from psychopy import prefs
 # from psychtoolbox import audio, GetSecs
 import sounddevice as sd
 import scipy.io.wavfile as sw
-print(os.getcwd())
+import parallel
+import time
 
 # prefs.hardware['audioLib'] = ['ptb', 'pyo', 'pygame']
 prefs.hardware['audioLib'] = ['sounddevice', 'pyo', 'pygame', 'PTB']
@@ -30,23 +30,44 @@ if check_os() in ['Linux']:
 elif check_os() in ['Windows', 'macOS']:
     kb = None
 
+def send_trigger(p, code):
+    """
+        Invia un codice di trigger convertito in binario tramite porta parallela.
+
+        Args:
+            p(parallel.Parallel): Oggetto Parallel Configurato
+            code (int): Il codice numerico da inviare.
+            numlns (int, opzionale): Il numero di linee (o pin) da utilizzare
+            per la rappresentazione binaria del codice. Default è 8.
+
+        Returns:
+            None
+        """
+    if p is not None: 
+        # Invia il code alla porta parallela, attende 10ms e poi resetta la porta
+        p.setData(code)
+        time.sleep(0.05)
+        p.setData(0)
+        print(f"Trigger inviato: {code}, binario: {bin(code)}")
+    else: 
+        print("Trigger could not be sent")
+        
 # Definizione dei codici trigger
 RC_TRIG = 10  # Start Recording
-BG_TRIG = 20  # Start Experiment
+BG_TRIG = 20 # Start Experiment
+A_TRIG = 22 # Acoustic stimula
+S_TRIG = 28  # Sham Stimulation
 AS_TRIG = 30  # Alarm Sound
+I_TRIG = 26 # Interruption
 ED_TRIG = 40  # Stop Experiment
 
-def start_eeg_recording():
+def start_eeg_recording(p):
     print("Avvio registrazione EEG")
-    send_trigger(RC_TRIG)
+    send_trigger(p=p, code=RC_TRIG)
 
-def stop_eeg_recording():
-    print("Arresto registrazione EEG e salvataggio dati")
-    send_trigger(ED_TRIG)
-
-def send_trigger(code, numlns=8):
-    trigger_bin = trgout(code, numlns)
-    print(f"Trigger inviato: {code}, binario: {trigger_bin}")
+def stop_eeg_recording(p):
+    print("Arresto registrazione EEG")
+    send_trigger(p=p, code=ED_TRIG)
 
 def select_stimuli(audio_paths):
     selected = random.sample(audio_paths, 2)
@@ -54,21 +75,11 @@ def select_stimuli(audio_paths):
     return selected[0], selected[1], control
 
 def play_pink_noise(pink_noise):
-    # sd.default.device = 0
-    # pink_noise = sound.Sound(pink_noise_file, loops=-1)  # -1 per loop infinito
-    # pink_noise = sw.read(pink_noise_file)[1]
-    # if stream.channels == 2:
-    #     pink_noise = np.stack((pink_noise, pink_noise), 1)
-    # stream.write(pink_noise)
     sd.play(pink_noise, loop=True)
-    # pink_noise.play()
     return pink_noise
 
 def stop_pink_noise(pink_noise):
-    # if pink_noise:
     sd.stop()
-        # pink_noise.stop()
-        # pink_noise = None
     return pink_noise
 
 # def fade_sound(sound_obj, duration=0.1, fade_in=True, start_volume=0, end_volume=1):
@@ -82,7 +93,7 @@ def stop_pink_noise(pink_noise):
 #         core.wait(duration / steps)
 
 
-def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, parent_dir, pink_noise):
+def manual_stim(p, win, participant_id, session, sex, n2_stimulus, rem_stimulus, parent_dir, pink_noise):
     # Carica i suoni
     # n2_sound = sound.Sound(n2_stimulus)
     # rem_sound = sound.Sound(rem_stimulus)
@@ -106,12 +117,8 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
     selected_sound = None
 
     stimulation_times = []
-    output_file = os.path.join(output_directory, f"stimulation_times_{participant_id}_{session}.csv")
-
-    # Avvia il pink noise a volume basso
-    # pink_noise.setVolume(0.9)  # Volume iniziale basso
-   
-    
+    output_file = os.path.join(output_directory,
+                               f"stimulation_times_{participant_id}_{session}.csv")
 
     while True:
         current_time = stimulation_timer.getTime()
@@ -120,7 +127,6 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
             instruction_text.text = "Premi 'N' per stimolo N2, 'W' per stimolo REM"
             instruction_text.draw()
             win.flip()
-            # keys = event.waitKeys(keyList=['n', 'w', 'escape', 'esc'])
             keys = kb.waitKeys(keyList=['n', 'w', 'escape', 'esc'])
             if 'escape' in keys or 'esc' in keys:
                 return "quit"
@@ -144,7 +150,7 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
             if stimulation_started:
                 stimulation_timer.reset()
                 next_sound_time = 0  # Resetta il tempo per il prossimo suono
-                send_trigger(BG_TRIG)
+                send_trigger(p, BG_TRIG)
                 # stop_pink_noise(pink_noise)
                 # print(f"File audio selezionato: {os.path.basename(selected_sound.fileName)}")
 
@@ -160,23 +166,21 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
             if elapsed_time >= max_duration:
                 print("Durata massima raggiunta.")
                 break
-
-            # keys = event.getKeys(['q', 'r', 'escape', 'esc'])
             keys = kb.getKeys(['q', 'r', 'escape', 'esc'])
             if 'escape' in keys or 'esc' in keys:
-                send_trigger(ED_TRIG)
+                send_trigger(p, ED_TRIG)
                 return "quit"
             if 'q' in keys:
                 print("Stimolazione interrotta. Tornando alla selezione dello stimolo.")
                 stimulation_started = False
-                send_trigger(ED_TRIG)
+                send_trigger(p, I_TRIG)
                 stimulation_timer.reset()
                 print(stimulation_timer.getTime())
                 continue  # Torna all'inizio del ciclo while
             elif 'r' in keys:
                 if elapsed_time >= min_duration:
                     print("Richiesta di terminare la stimolazione.")
-                    send_trigger(ED_TRIG)
+                    send_trigger(p,I_TRIG)
                     stop_pink_noise(pink_noise)
                     break
                 else:
@@ -212,18 +216,21 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
     if stimulation_started:
         stop_pink_noise(pink_noise)
         sd.default.device = 5
-        print("Riproduco l'allarme.")
-        send_trigger(AS_TRIG)
+        print("Riproduzione l'allarme.")
+        send_trigger(p, AS_TRIG)
         alarm = sw.read(alarm_path)[1]
         sd.play(alarm)
         # alarm = sound.Sound(alarm_path)
         # alarm.play()
         core.wait(2) 
         # core.wait(alarm.getDuration())
-        print("Premi la barra spaziatrice per l'avvio del questionario...")
-        # event.waitKeys(keyList=['space'])
+        instruction_text.text= "Premi la barra spaziatrice per l'avvio del questionario..."
+        instruction_text.draw()
+        win.flip
         kb.waitKeys(keyList=['space'])
-        print("Avvio del questionario...")
+        instruction_text.text= "Avvio del questionario..."
+        instruction_text.draw()
+        win.flip
         dreamquestrc(participant_id, session, sex, output_directory, fs=48000)
         sd.default.device = 0
 
@@ -231,26 +238,6 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, pa
 
 
 def main(headphones_dev, speakers_dev):
-    
-    # widthPix = 1920  # screen width in px
-    # heightPix = 1080  # screen height in px
-    # monitorwidth = 54.3  # monitor width in cm
-    # viewdist = 60.  # viewing distance in cm
-    # #monitorname = 'CH7210'
-    # monitorname = 'DP-6'
-    # # scrn = 1  # 0 to use main screen, 1 to use external screen
-    # # widthPix = 2560  # screen width in px
-    # # heightPix = 1440  # screen height in px
-    # # monitorwidth = 28.04  # monitor width in cm (puoi mantenere questo valore se è corretto)
-    # # viewdist = 60.  # viewing distance in cm (puoi mantenere questo valore se è corretto)
-    # # monitorname = 'MacBook Pro 13"'
-    # scrn = 0 
-    # mon = monitors.Monitor(monitorname, width=monitorwidth, distance=viewdist)
-    # mon.setSizePix((widthPix, heightPix))
-    
-    # win = visual.Window(fullscr=False, size=(widthPix, heightPix), color="grey",
-    #                 units='pix', monitor=mon, pos=(0, -0.2), screen=scrn,
-    #                 winType="pyglet")
     
     sd.default.device = 0
     # if headphones_dev == speakers_dev:
@@ -267,7 +254,17 @@ def main(headphones_dev, speakers_dev):
     #     spk_stream.start()
     
     win = visual.Window(fullscr=False, color="black", units="norm")
-    start_eeg_recording()
+    
+    # Inizializzazione della porta parallela LPT1
+    address = 0x378
+    try:
+        p = parallel.Parallel()
+        print("Porta parallela aperta")
+    except Exception as e:
+        p = None
+    print("Errore apertura porta parallela")
+    
+    start_eeg_recording(p)
 
     # Ottieni le informazioni una sola volta all'inizio
     outputname = get_meta_night()
@@ -307,7 +304,10 @@ def main(headphones_dev, speakers_dev):
     try:
         while stimulation_count < max_stimulations:
             print(f"Iniziando stimolazione {stimulation_count + 1} di {max_stimulations}")
-            result = manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus, parent_dir, pink_noise)
+            result = manual_stim(p=p, win=win, participant_id=participant_id,
+                                 session=session, sex=sex, n2_stimulus=n2_stimulus,
+                                 rem_stimulus=rem_stimulus, parent_dir=parent_dir,
+                                 pink_noise=pink_noise)
             
             if result == "quit":
                 print("Uscita richiesta dall'utente.")
@@ -317,7 +317,6 @@ def main(headphones_dev, speakers_dev):
                 print(f"Stimolazione completata. Totale stimolazioni: {stimulation_count}")
                 if stimulation_count < max_stimulations:
                     print("Premi 'C' per continuare con la prossima stimolazione o 'Q' per terminare.")
-                    # keys = event.waitKeys(keyList=['c', 'q'])
                     keys = kb.waitKeys(keyList=['c', 'q'])
                     if 'q' in keys:
                         print("Uscita richiesta dall'utente.")
@@ -332,7 +331,7 @@ def main(headphones_dev, speakers_dev):
         print(f"Esperimento completato dopo {stimulation_count} stimolazioni.")
     finally:
         stop_pink_noise(pink_noise)
-        stop_eeg_recording()
+        stop_eeg_recording(p)
         win.close()
 
 if __name__ == "__main__":
