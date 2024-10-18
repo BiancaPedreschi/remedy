@@ -3,71 +3,90 @@ if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
     xlib.XInitThreads()
-from config.config import read_config
+from remedy.config.config import read_config
 import os
 import os.path as op
-import random
 import pandas as pd
-from utils.common_functions import wait_kbd_emo, get_meta, show, str2num
-from psychopy import visual, core, event, monitors, sound
+from remedy.utils.common_functions import (wait_kbd_emo, get_meta, show, 
+                                           send_trigger_thread)
+from psychopy import visual, core, monitors
 from psychopy.hardware import keyboard
 from psychopy import prefs
+from remedy.utils.find_devices import find_device
+import soundfile as sf
+import sounddevice as sd
+import parallel
+
 
 prefs.hardware['audioLib'] = ['ptb', 'pyo', 'pygame']
 prefs.general['audioDevice'] = 'default'
 
-def save_emotion_scores(names, vals, aros, output_directory, subject_id, session):
+
+def save_emotion_scores(names, vals, aros, output_directory, 
+                        subject_id, session):
     df = pd.DataFrame({
         'Audio': names,
         'Valence': vals,
         'Arousal': aros,
-
     })
-    df.to_csv(op.join(output_directory, f"emoscoring_PSEUDOWORDS_Pp{subject_id}_s_{session}.csv"), index=False)
+    df.to_csv(op.join(output_directory, f'RY{subject_id:03d}_N{session}.csv'), 
+              index=False)
+    return
 
-def main():
+
+def task_B():
+    # Define audio devices and paths
+    devices = find_device()
+    dev_hp = devices[0]
     config = read_config()
     parent_dir = config['paths']['parent']
-    data_dir = op.join(parent_dir, 'data')
+    data_dir = config['paths']['data']
+    results_dir = config['paths']['results']
+    
     all_combinations_path =  op.join(parent_dir, 'combinations', 
-                                     'all_combinations_pseudo_final.csv')
+                                     'all_combinations_pseudo_day.csv')
     all_combinations_df = pd.read_csv(all_combinations_path)
+    
+    # Define parallel port
+    try:
+        p = parallel.Parallel()
+        print("Porta parallela aperta")
+    except Exception as e:
+        p = None
+        print("Errore apertura porta parallela")
+    
+    # Define trigger
+    SN_TRIG = 26 # Trigger for sound presentation
 
+    # Get subject data
     outputname = get_meta()
     subject_id = outputname[0]
     session = int(outputname[1])
 
-    # Filtra il DataFrame per subject_id e session
-    filtered_df = all_combinations_df[(all_combinations_df['Participant_ID'] == subject_id) & 
-                                      (all_combinations_df['Session'] == session)]
+    # Filter DataFrame by subject_id and session
+    filtered_df = all_combinations_df[
+        (all_combinations_df['Participant_ID'] == subject_id) & 
+        (all_combinations_df['Session'] == session)
+        ]
     
-    # Ottieni i percorsi delle pseudoparole
+    # Get pseudowords audio paths
     audio_paths = filtered_df['Pseudo'].tolist()
     print(audio_paths)
 
-    output_directory = op.join(parent_dir, 'data', 'output_wake')
+    output_directory = op.join(results_dir, f'RY{subject_id:03d}', 
+                               f'N{session}', 'task_B')
     os.makedirs(output_directory, exist_ok=True)
-
-    sounds = [sound.Sound(audio) for audio in audio_paths]  
-
-    names = []
-    vals = []
-    aros = []
-
-
+    sd.default.device = dev_hp
+    sounds = [sf.read(audio)[0] for audio in audio_paths]
+    
+    # Set psychopy video and keyboard settings
     widthPix = 1920  # screen width in px
     heightPix = 1080  # screen height in px
     monitorwidth = 54.3  # monitor width in cm
     viewdist = 60.  # viewing distance in cm
-    #monitorname = 'CH7210'
-    monitorname = 'DP-6'
-    # scrn = 1  # 0 to use main screen, 1 to use external screen
-    # widthPix = 2560  # screen width in px
-    # heightPix = 1440  # screen height in px
-    # monitorwidth = 28.04  # monitor width in cm (puoi mantenere questo valore se è corretto)
-    # viewdist = 60.  # viewing distance in cm (puoi mantenere questo valore se è corretto)
-    # monitorname = 'MacBook Pro 13"'
-    scrn = 0 
+    monitorname = 'Screen_0'
+    scrn = 0
+    
     mon = monitors.Monitor(monitorname, width=monitorwidth, distance=viewdist)
     mon.setSizePix((widthPix, heightPix))
 
@@ -79,41 +98,34 @@ def main():
         kb = keyboard.Keyboard(device=-1)
     elif check_os() in ['Windows', 'macOS']:
         kb = None
-    emoKeys = ['1', 'num_1', '2', 'num_2', '3', 'num_3', '4', 'num_4', '5', 'num_5', 'escape']
+    emoKeys = ['1', 'num_1', '2', 'num_2', '3', 'num_3', '4', 
+               'num_4', '5', 'num_5', 'escape']
 
-    # ________________ -  INSTRUCTIONS   -
+    # Set images paths
     image_dir = op.join(data_dir, 'img_instructions')
-
-    # Percorsi completi per le immagini
+    
     instr0_path = op.join(image_dir, 'instr1_pseudo.png')
     end_path = op.join(image_dir, 'end.png')
     instr2_path = op.join(image_dir, 'instr2_pseudo.png')
     instr3_path = op.join(image_dir, 'instr3_pseudo.png')
     valSAM_path = op.join(image_dir, 'valSAM.png')
     aroSAM_path = op.join(image_dir, 'aroSAM.png')
-    slideBrk_path_1 = op.join(image_dir, 'prima_s.png')
-    slideBrk_path_2 = op.join(image_dir, 'seconda_s.png')
-    dist_path = op.join(image_dir, 'dist.png')
-    fam_path = op.join(image_dir, 'fam.png')
-    rip_path = op.join(image_dir, 'rip.png')
 
-    slide_instr = visual.ImageStim(win, image=instr0_path, units="pix", pos=(0, 0))
-    slideBrk_1 = visual.ImageStim(win, image=slideBrk_path_1, units="pix", pos=(0, 0))
-    slideBrk_2 = visual.ImageStim(win, image=slideBrk_path_2, units="pix", pos=(0, 0))
+    slide_instr = visual.ImageStim(win, image=instr0_path, units="pix", 
+                                   pos=(0, 0))
     slide_end = visual.ImageStim(win, image=end_path, units="pix", pos=(0, 0))
-    instrValSAM = visual.ImageStim(win, image=instr2_path, units="pix", pos=(0, 0))
-    instrAroSAM = visual.ImageStim(win, image=instr3_path, units="pix", pos=(0, 0))
+    instrValSAM = visual.ImageStim(win, image=instr2_path, units="pix", 
+                                   pos=(0, 0))
+    instrAroSAM = visual.ImageStim(win, image=instr3_path, units="pix", 
+                                   pos=(0, 0))
 
 
-    fixcross = visual.TextStim(win, text="+", units="norm", pos=(0, 0), color="black")
+    fixcross = visual.TextStim(win, text="+", units="norm", pos=(0, 0), 
+                               color="black")
     valSAM = visual.ImageStim(win, image=valSAM_path, units="norm", pos=(0, 0))
     aroSAM = visual.ImageStim(win, image=aroSAM_path, units="norm", pos=(0, 0))
-    dist = visual.ImageStim(win, image=dist_path, units="norm", pos=(0, 0))
-    fam = visual.ImageStim(win, image=fam_path, units="norm", pos=(0, 0))
-    rip = visual.ImageStim(win, image=rip_path, units="norm", pos=(0, 0))
 
-
-    # --------------------------  INSTRUCTIONS  --------------------------
+    ##### Show instructions #####
     show(slide_instr)
     wait_kbd_emo(kb)
 
@@ -122,49 +134,56 @@ def main():
 
     show(instrAroSAM)
     wait_kbd_emo(kb)
-
-
+    
+    ##### Start task #####
+    names = []
+    vals = []
+    aros = []
     for n in range(len(audio_paths)):
-
-        timer = core.Clock()  # TESTING PURPOSES ONLY - Image rating timing
 
         show(fixcross)
         core.wait(1.)
-        sounds[n].play()
-        core.wait(sounds[n].getDuration())
-        sounds[n].stop()
-        names.append(audio_paths[n]) 
+        send_trigger_thread(p, SN_TRIG)
+        sd.play(sounds[n])
+        sd.wait()
+        names.append(audio_paths[n].split(os.sep)[-1]) 
 
         # Valence rating
         show(fixcross)
         core.wait(1.)
-        slide_val = visual.TextStim(win, text=f"Valenza",font='Calibri', units="norm", pos=(0, 0.6), color="black")
+        slide_val = visual.TextStim(win, text=f"Valenza",font='Calibri', 
+                                    units="norm", pos=(0, 0.6), color="black")
         slide_val.draw()
         valSAM.draw()
         win.flip()
+        core.wait(.1)
         vals_resp = wait_kbd_emo(kb, okKeys=emoKeys)
-        print(vals_resp)
-        vals.append(vals_resp)
+        print(vals_resp.name)
+        vals.append(vals_resp.name)
 
 
         # Arousal rating
         show(fixcross)
-        slide_ar = visual.TextStim(win, text=f"Intensità Emotiva", font='Calibri', units="norm", pos=(0, 0.6), color="black")
+        slide_ar = visual.TextStim(win, text=f"Intensità Emotiva", 
+                                   font='Calibri', units="norm", 
+                                   pos=(0, 0.6), color="black")
         slide_ar.draw()
         aroSAM.draw()
         win.flip()
+        core.wait(.1)
         aros_resp = wait_kbd_emo(kb, okKeys=emoKeys)
-        print(aros_resp)    
-        aros.append(aros_resp)
+        print(aros_resp.name)    
+        aros.append(aros_resp.name)
 
 
     show(slide_end)
     core.wait(2)
     win.close()
-    save_emotion_scores(names, vals, aros, output_directory, subject_id, session)
+    save_emotion_scores(names, vals, aros, output_directory, 
+                        subject_id, session)
+    return
 
-    # --------------------------  EXPERIMENT END  --------------------------
 
 if __name__ == "__main__":
-    main()
+    task_B()
 
