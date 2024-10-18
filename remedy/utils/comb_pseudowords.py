@@ -2,6 +2,8 @@ import pandas as pd
 import random
 import os
 import os.path as op
+from remedy.config.config import read_config
+
 
 def generate_combinations(participant_id, categories, audio_labels, base_audio_path):
 
@@ -37,26 +39,47 @@ def generate_combinations(participant_id, categories, audio_labels, base_audio_p
     return all_combinations
 
 def main():
+    # Define paths and stimuli
+    config = read_config()
+    data_dir = config['paths']['data']
+    day_dir = op.join(data_dir, 'pwd', 'day_stim')
+    night_dir = op.join(data_dir, 'pwd', 'night_stim')
+    
     categories = ['Buildings', 'Children', 'Food', 'Mammals', 'Vehicles', 'Water']
     audio_labels = ['A', 'B', 'C', 'D', 'E', 'F']  
-
-    base_audio_path = op.join(os.getcwd(), 'data', 'pwd')
-
+    
+    #Generate combinations for day stimultation
     all_combinations = pd.DataFrame()
 
-    for participant_id in range(1, 46):
-        combinations = generate_combinations(participant_id, categories, audio_labels, base_audio_path)
+    for participant_id in range(1, 37):
+        combinations = generate_combinations(participant_id, categories, audio_labels, day_dir)
         all_combinations = pd.concat([all_combinations, combinations])
-   # Verifica il bilanciamento delle combinazioni
+
     category_counts = all_combinations.groupby(['Session', 'Category']).size().unstack(fill_value=0)
     audio_counts = all_combinations.groupby(['Session', 'Pseudo']).size().unstack(fill_value=0)
 
     print("\nCounts per Category:")
     print(category_counts)
-
     print("\nCounts per Audio:")
     print(audio_counts)
-    all_combinations.to_csv(op.join(os.getcwd(), 'combinations', 'all_combinations_pseudo_final.csv'), index=False)
+    all_combinations.to_csv(op.join(os.getcwd(), 'combinations', 'all_combinations_pseudo_day.csv'), index=False)
+    
+    #Generate combinations for night stimultation
+    all_combinations = pd.DataFrame()
+    
+    for participant_id in range(1, 37):
+        combinations = generate_combinations(participant_id, categories, audio_labels, night_dir)
+        all_combinations = pd.concat([all_combinations, combinations])
+
+    category_counts = all_combinations.groupby(['Session', 'Category']).size().unstack(fill_value=0)
+    audio_counts = all_combinations.groupby(['Session', 'Pseudo']).size().unstack(fill_value=0)
+
+    print("\nCounts per Category:")
+    print(category_counts)
+    print("\nCounts per Audio:")
+    print(audio_counts)
+    all_combinations.to_csv(op.join(os.getcwd(), 'combinations', 'all_combinations_pseudo_night.csv'), index=False)
+
 
 if __name__ == "__main__":
     main()

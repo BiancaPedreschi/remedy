@@ -1,20 +1,15 @@
-from psychopy import core, event, visual, sound, gui
-from .questlist import questlist
+from psychopy import core, event, gui
 import os
 import os.path as op
 from datetime import datetime
 import numpy as np
 import json
-import threading
-import importlib.util
 import sounddevice as sd
 import scipy.io.wavfile as sw
-from utils.audio_recorder import start_recording, save_recording_audio
-# spec = importlib.util.spec_from_file_location("audio_recorder", op.join(os.getcwd(), 'remedy', 'utils', 'audio_recorder.py'))
-# audio_recorder = importlib.util.module_from_spec(spec)
-# spec.loader.exec_module(audio_recorder)
-# start_recording = audio_recorder.start_recording
-# save_recording_audio = audio_recorder.save_recording_audio
+from remedy.config.config import read_config
+from remedy.questionnaire.questlist import questlist
+from remedy.utils.audio_recorder import save_recording_audio
+
 
 def colored_print(color, text):
     colors = {
@@ -26,41 +21,44 @@ def colored_print(color, text):
 def conv2sec(hours, minutes, seconds):
     return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
 
-def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
+def dreamquestrc(subject_id, session, sex, fs=44100):
     # win = visual.Window(fullscr=False, color="white", units="norm")
 
-    curr_path = os.path.dirname(os.path.abspath(__file__))
-    datapath = os.path.join(curr_path, 'questions_org')
-    outpath = os.path.join(out_path, 'recordings', f"participant_{participant_id}", f"session_{session}")
+    config = read_config()
+    data_dir = config['paths']['data']
+    results_dir = config['paths']['results']
+    
+    datapath = os.path.join(data_dir, 'questions_org')
+    outpath = os.path.join(results_dir,  f'RY{subject_id:03d}', 
+                           f'N{session}', 'task_E')
     os.makedirs(outpath, exist_ok=True)
 
-    files = ['qst01', 'qst02_1', 'qst02_2', 'qst02_3', 'qst03', 'qst04', 'qst05', 'qst05_1', 'qst06', 'qst07',
-             'qst08', 'qst09', 'qst10', 'qst10_1', 'qst10_2', 'qst10_3', 'qst10_4', 'qst10_5',
+    files = ['qst01', 'qst02_1', 'qst02_2', 'qst02_3', 'qst03', 'qst04', 
+             'qst05', 'qst05_1', 'qst06', 'qst07', 'qst08', 'qst09', 'qst10', 
+             'qst10_1', 'qst10_2', 'qst10_3', 'qst10_4', 'qst10_5',
              'qst11', 'qst12', 'qst13', 'qst14', 'qst15']
-    cmp = {'Female': ['', '', '', '', 'f', 'f', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'f'],
-           'Male': ['', '', '', '', 'm', 'm', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'm']}
-    # questions = {file: sound.Sound(os.path.join(datapath, f"{file}{cmp[sex][nx]}.wav")) for nx, file in enumerate(files)}
-    questions = {file: os.path.join(datapath, f"{file}{cmp[sex][nx]}.wav") for nx, file in enumerate(files)}
+    cmp = {'Female': ['', '', '', '', 'f', 'f', '', '', '', '', '', '', '', 
+                      '', '', '', '', '', '', '', '', '', 'f'],
+           'Male': ['', '', '', '', 'm', 'm', '', '', '', '', '', '', '', '', 
+                    '', '', '', '', '', '', '', '', 'm']}
+
+    questions = {file: os.path.join(datapath, f"{file}{cmp[sex][nx]}.wav") 
+                 for nx, file in enumerate(files)}
 
     responses = {}
     
     # Configura la registrazione audio
     duration = 3600  # Registra per un'ora (puoi modificare questo valore)
-    channels = 2
-    device_index = 0  # Assicurati che questo sia l'indice corretto
     recorded_data = []
 
     print("Inizio del questionario")
-    print(f"Partecipante: {participant_id}, Sessione: {session}, Sesso: {sex}")
+    print(f"Partecipante: {subject_id}, Sessione: {session}, Sesso: {sex}")
     print(f"Directory di output: {outpath}")
-    print("Premi 'q' in qualsiasi momento per interrompere il questionario e salvare i dati.")
-
-
-    stop_recording_event = threading.Event()
-    recording_thread = threading.Thread(target=start_recording, args=(duration, fs, channels, stop_recording_event, recorded_data, device_index))
-    recording_thread.start()
-
+    print('Premi \'q\' in qualsiasi momento per interrompere il questionario ',
+          'e salvare i dati.')
+    
     question_count = 0
+    answers = []
     try:
         for qn in range(1, 16):
             sq = f"{qn:02d}"
@@ -68,12 +66,18 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
 
             # Riproduci l'audio della domanda
             if f'qst{sq}' in questions:
+                if qn != 1:
+                    answers.append(np.expand_dims(answ[~np.isnan(answ)], 1))
                 question = sw.read(questions[f'qst{sq}'])[1]
-                sd.play(question)
+                qst = np.full((question.shape[0], 1), np.nan)
+                sd.playrec(question, samplerate=44100, channels=1, 
+                           dtype='int16', out=qst, input_mapping=np.array([1]),
+                           output_mapping=np.array([1, 2]))
+                answ = np.full((60*10*44100, 1), np.nan)
                 sd.wait()
-                # questions[f'qst{sq}'].play()
-                # core.wait(questions[f'qst{sq}'].getDuration())
-            
+                answers.append(qst)
+                sd.rec(samplerate=44100, channels=1, out=answ, dtype='int16')
+
             # Controlla se l'utente vuole interrompere
             if event.getKeys(['q']):
                 print("Interruzione richiesta dall'utente.")
@@ -97,11 +101,19 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
                 
                 # Riproduci l'audio corrispondente
                 if audio_key in questions:
+                    answers.append(np.expand_dims(answ[~np.isnan(answ)], 1))
                     print(f"Riproducendo audio: {audio_key}")
-                    sd.play(sw.read(questions[audio_key])[1])
+                    question = sw.read(questions[audio_key])[1]
+                    qst = np.full((question.shape[0], 1), np.nan)
+                    sd.playrec(question, samplerate=44100, channels=1, 
+                               dtype='int16', out=qst, 
+                               input_mapping=np.array([1]),
+                               output_mapping=np.array([1, 2]))
+                    answ = np.full((60*10*44100, 1), np.nan)
                     sd.wait()
-                    # questions[audio_key].play()
-                    # core.wait(questions[audio_key].getDuration())
+                    answers.append(qst)
+                    answ = sd.rec(samplerate=44100, channels=1, out=answ, 
+                                  dtype='int16')
                 else:
                     print(f"Audio {audio_key} non trovato")
                 
@@ -152,32 +164,47 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
                 responses['qst10'] = np.full((1, 5), np.nan)
                 sensi = ['Visivo', 'Uditivo', 'Tattile', 'Olfattivo', 'Gustativo']
                 for ns, senso in enumerate(sensi, start=1):
-                    sd.play(sw.read(questions[f'qst10_{ns}'])[1])
+                    answers.append(np.expand_dims(answ[~np.isnan(answ)], 1))
+                    question = sw.read(questions[f'qst10_{ns}'])[1]
+                    qst = np.full((question.shape[0], 1), np.nan)
+                    sd.playrec(question, samplerate=44100, channels=1, 
+                               dtype='int16', out=qst, 
+                               input_mapping=np.array([1]),
+                               output_mapping=np.array([1, 2]))
+                    answ = np.full((60*10*44100, 1), np.nan)
                     sd.wait()
-                    # questions[f'qst10_{ns}'].play()
-                    # core.wait(questions[f'qst10_{ns}'].getDuration())
+                    answers.append(qst)
+                    answ = sd.rec(samplerate=44100, channels=1, out=answ, 
+                                  dtype='int16')
+                    
                     dlg = gui.Dlg(title=f"Domanda 10.{ns}: {senso}")
                     dlg.addText(f"Hai avuto un'esperienza {senso.lower()}?")
                     dlg.addField('Risposta:', choices=['Sì', 'No'])
                     responses['qst10'][0, ns - 1] = 1 if dlg.show()[0] == 'Sì' else 0
-            
+                    
             question_count += 1
             print(f"Domanda {sq} completata")
             print(f"Risposta salvata: {responses.get(f'qst{sq}', 'Non disponibile')}")
 
+        answers.append(np.expand_dims(answ[~np.isnan(answ)], 1))
+        sd.stop()
         print(f"Totale domande presentate: {question_count}")
 
     except Exception as e:
         print(f"Si è verificato un errore: {e}")
     finally:
         # Ferma la registrazione
-        stop_recording_event.set()
-        recording_thread.join()
-
+        recorded_data = np.vstack(answers)
+        
         # Salva la registrazione audio
-        if recorded_data:
+        
+        cdate = datetime.now().strftime("%Y%m%d")
+        ctime = datetime.now().strftime("%H%M%S")
+        if recorded_data.shape[0] > 0:
             try:
-                audio_file = save_recording_audio(recorded_data[0], outpath, participant_id, session, fs)
+                audio_file = save_recording_audio(recorded_data, outpath, 
+                                                  subject_id, session, 
+                                                  cdate, ctime, fs)
                 if audio_file and os.path.exists(audio_file):
                     print(f"File audio creato: {audio_file}")
                 else:
@@ -187,18 +214,15 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
         else:
             print("Nessun dato registrato.")
 
-        cdate = datetime.now().strftime("%Y-%m-%d")
-        ctime = datetime.now().strftime("%H:%M:%S")
-
     data_to_save = {
         "cdate": cdate,
         "ctime": ctime,
-        "participant_id": participant_id,
+        "participant_id": subject_id,
         "session": session,
         "sex": sex,
         "responses": {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in responses.items()}
     }
-    foutname = os.path.join(outpath, f"dati_{participant_id}_{session}.json")
+    foutname = os.path.join(outpath, f"RY{subject_id:03d}_N{session}_{cdate}_{ctime}.json")
     with open(foutname, 'w') as json_file:
         json.dump(data_to_save, json_file, indent=4)
 
@@ -211,5 +235,7 @@ def dreamquestrc(participant_id, session, sex, out_path, fs=44100):
 
 if __name__ == "__main__":
     dreamquestrc()
-
-# dreamquestrc("001", 1, "Female", "./output", fs=48000)
+    
+    
+    # sd.default.device = 4
+    # dreamquestrc("001", 1, "Female", "/home/phantasos/Scrivania", fs=48000, device=4)
