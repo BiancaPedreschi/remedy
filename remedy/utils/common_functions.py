@@ -1,5 +1,7 @@
 from psychopy import core, event, gui
 import platform
+import time
+import threading
 
 
 def check_os():
@@ -96,7 +98,7 @@ def wait_kbd_emo(kb, okKeys=["space", "escape"]):
     if check_os() in ['Linux']:
         myKey = kb.waitKeys(keyList=okKeys, waitRelease=False, clear=True)[0]
         if myKey == "space":
-            return
+            return myKey
         elif myKey == "escape":
             core.quit()
         else:
@@ -170,3 +172,27 @@ def str2num_2(resp):
 def show(stim: object) -> object:
     stim.draw()
     stim.win.flip()  # needed for two window setup - vs win.flip()
+
+
+def send_trigger_thread(p, code, numlns=8):
+    """
+    Sends a trigger code converted to binary via serial port in a separate 
+    thread.
+
+    Args:
+        p : porta parallela
+        code (int): The numeric code to send.
+        numlns (int, optional): The number of lines (or pins) to use for the 
+            binary representation of the code. Default is 8.
+
+    Returns:
+        None
+    """
+    def trigger():
+        print(f"Trigger inviato: {code}, binario: {code}")
+        p.setData(code)
+        time.sleep(0.005)
+        p.setData(0)
+    
+    threading.Thread(target=trigger).start()
+    return
