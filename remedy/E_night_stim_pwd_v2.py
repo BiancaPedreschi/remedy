@@ -79,10 +79,11 @@ def select_stimuli(audio_paths):
     control = [path for path in audio_paths if path not in selected][0]
     return selected[0], selected[1], control
 
-def play_pink_noise(pink_noise_file):
+def play_pink_noise(pink_noise_file, volume=1):
     # sd.default.device = 0
     # pink_noise = sound.Sound(pink_noise_file, loops=-1)  # -1 per loop infinito
     pink_noise = sw.read(pink_noise_file)[1]
+    pink_noise = pink_noise * volume
     sd.play(pink_noise, loop=True)
     # pink_noise.play()
     return pink_noise
@@ -106,7 +107,7 @@ def stop_pink_noise(pink_noise):
 
 
 def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus,
-                 parent_dir, pink_noise):
+                 parent_dir, pink_noise_file):
     # Carica i suoni
     # n2_sound = sound.Sound(n2_stimulus)
     # rem_sound = sound.Sound(rem_stimulus)
@@ -133,10 +134,9 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus,
     output_file = os.path.join(output_directory,
                                 f"stim_times_{participant_id}_{session}.csv")
 
-    # Avvia il pink noise a volume basso
-    # pink_noise.setVolume(0.9)  # Volume iniziale basso
-   
-    
+     # Avvia il pink noise a volume iniziale
+    pink_noise = play_pink_noise(pink_noise_file, volume=1.0)
+ 
 
     while True:
         current_time = stimulation_timer.getTime()
@@ -209,8 +209,9 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus,
 
             # Nel ciclo principale:
             if current_time >= next_sound_time:
-                # stop_pink_noise(pink_noise)
-                # selected_sound.play()
+                stop_pink_noise(pink_noise)
+                pink_noise = play_pink_noise(pink_noise_file, volume=0.3)
+                
                 sd.play(selected_sound)
                 stim_start_time = current_time
                 # stim_duration = selected_sound.getDuration()
@@ -218,6 +219,10 @@ def manual_stim(win, participant_id, session, sex, n2_stimulus, rem_stimulus,
                 # Calcola un intervallo casuale tra 1.5 e 2.5 secondi
                 inter_stimulus_interval = random.uniform(1.5, 2.5)
                 print(f"Tempo atteso: {inter_stimulus_interval:.2f} secondi")
+
+                # Ripristina il volume del pink noise
+                stop_pink_noise(pink_noise)
+                pink_noise = play_pink_noise(pink_noise_file, volume=1.0)
 
                 # Attendi l'intervallo tra gli stimoli
                 core.wait(inter_stimulus_interval)
@@ -303,7 +308,8 @@ def main():
     print(f"Stimolo di controllo (non usato): {os.path.basename(control_stimulus)}")
 
     pink_noise_file = "pink_noise_60min.wav"
-    pink_noise = play_pink_noise(pink_noise_file)
+
+    pink_noise = play_pink_noise(pink_noise_file, volume=1)
     print("Pink noise avviato.")
     send_trigger(BG_TRIG)
 

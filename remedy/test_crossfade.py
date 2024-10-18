@@ -177,7 +177,7 @@ def calculate_snr(signal, noise):
 sample_rate = 44100  # Standard sampling rate
 
 # Set the default audio device to the first available device
-# sd.default.device = 0
+sd.default.device = 0
 
 # Load the word sound
 word_sound_path = get_relative_path('data', 'remedy_data', 'pwd',
