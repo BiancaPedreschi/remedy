@@ -12,6 +12,8 @@ import time
 # from psychtoolbox import audio, GetSecs
 import sounddevice as sd
 import scipy.io.wavfile as sw
+from questionnaire.trout import trgout
+import threading
 
 # prefs.hardware['audioLib'] = ['ptb', 'pyo', 'pygame']
 prefs.hardware['audioLib'] = ['sounddevice', 'pyo', 'pygame', 'PTB']
@@ -37,32 +39,33 @@ except Exception as e:
     p = None
     print("Error in parallel port configuration")
 
-def send_trigger(p, code):
+def send_trigger_thread(p, code, numlns=8):
     """
-        Invia un codice di trigger convertito in binario tramite porta parallela.
+    Sends a trigger code converted to binary via serial port in a separate thread.
 
-        Args:
-            p(parallel.Parallel): Oggetto Parallel Configurato
-            code (int): Il codice numerico da inviare.
-            numlns (int, opzionale): Il numero di linee (o pin) da utilizzare
-            per la rappresentazione binaria del codice. Default è 8.
+    Args:
+        p : porta parallela
+        code (int): The numeric code to send.
+        numlns (int, optional): The number of lines (or pins) to use for the binary representation of the code. Default is 8.
 
-        Returns:
-            None
-        """
-    if p is not None: 
-        # Invia il code alla porta parallela, attende 10ms e poi resetta la porta
+    Returns:
+        None
+    """
+    def trigger():
+        #trigger_bin = trgout(code, numlns)
+        print(f"Trigger inviato: {code}, binario: {code}")
         p.setData(code)
-        time.sleep(0.05)
+        time.sleep(0.01)
         p.setData(0)
-        print(f"Trigger inviato: {code}, binario: {bin(code)}")
-    else: 
-        print("Trigger could not be sent")   
+    
+    threading.Thread(target=trigger).start()
+        
 
 # Definizione dei codici trigger
 RC_TRIG = 10  # Start Recording
 BG_TRIG = 20 # Start Experiment
-A_TRIG = 22 # Acoustic stimula
+REM_TRIG = 22 # REM Stimulation
+N2_TRIG = 24 # N2 
 S_TRIG = 28  # Sham Stimulation
 AS_TRIG = 30  # Alarm Sound
 I_TRIG = 26 # Interruption
@@ -78,24 +81,26 @@ ED_TRIG = 40  # Stop Experiment
 
 def start_eeg_recording(p):
     print("Avvio registrazione EEG")
-    send_trigger(p=p, code=RC_TRIG)
+    send_trigger_thread(p=p, code=RC_TRIG)
 
 def stop_eeg_recording(p):
     print("Arresto registrazione EEG")
-    send_trigger(p=p, code=ED_TRIG)
+    send_trigger_thread(p=p, code=ED_TRIG)
 
 # Esempio di utilizzo
 if __name__ == "__main__":
-    start_eeg_recording(p)
-    time.sleep(60)  
-    send_trigger(p, BG_TRIG)
-    time.sleep(5)
-    send_trigger(p, A_TRIG)
-    time.sleep(5)
-    send_trigger(p, AS_TRIG)
-    time.sleep(5)
-    send_trigger(p, S_TRIG)
-    time.sleep(5)
-    send_trigger(p, I_TRIG)
-    stop_eeg_recording(p)
-    time.sleep(5)
+    # start_eeg_recording(p)
+    # time.sleep(60)  
+    send_trigger_thread(p, BG_TRIG)
+    time.sleep(2)
+    send_trigger_thread(p, N2_TRIG)
+    time.sleep(2)
+    send_trigger_thread(p, REM_TRIG)
+    time.sleep(2)
+    send_trigger_thread(p, AS_TRIG)
+    time.sleep(2)
+    send_trigger_thread(p, S_TRIG)
+    time.sleep(2)
+    send_trigger_thread(p, I_TRIG)
+    # stop_eeg_recording(p)
+    # time.sleep(5)
