@@ -1,4 +1,4 @@
-from utils.common_functions import check_os
+from remedy.utils.common_functions import check_os
 if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")

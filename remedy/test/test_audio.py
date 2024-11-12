@@ -36,8 +36,8 @@ def stop_audio(stream, p):
     p.terminate()
 
 # Carica i file audio di esempio
-pink_noise_file = "/home/phantasos/python_projects/space/remedy/remedy/PN.wav"
-other_audio_file = "/home/phantasos/python_projects/space/remedy/data/pwd/pseudoparola_A.wav"
+pink_noise_file = "/home/phantasos/python_projects/space/remedy/data/pwd/night_stim/PN.wav"
+other_audio_file = "/home/phantasos/python_projects/space/remedy/data/pwd/night_stim/pseudoparola_A.wav"
 # other_audio_file = "/Users/foscagiannotti/Desktop/python_projects/space/remedy/data/remedy_data/pwd/PP_A.wav"
 # Crea una finestra PsychoPy
 win = visual.Window(fullscr=False, color="black", units="norm")

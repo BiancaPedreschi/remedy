@@ -14,8 +14,8 @@ def adjust_volume(orig_PN, orig_PP, new_PN, new_PP, volume_PN=1, volume_PP=1, fs
     for opp, npp in zip(orig_PP, new_PP):
         _opp = sf.read(opp)[0]
         _npp = _opp * volume_PP
-        sd.play(_npp)
-        sd.wait()
+        # sd.play(_npp)
+        # sd.wait()
         sf.write(npp, _npp, fs)
     
     return
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     new_fname_PP = [op.join(data_dir, 'pwd', 'night_stim', f'pseudoparola_{fn}.wav') for fn in PP_letters]
     dev_hp, dev_sp = find_device()
     sd.default.device = dev_hp
-    adjust_volume(orig_fname_PN, orig_fname_PP, new_fname_PN, new_fname_PP, volume_PN=0.08, volume_PP=.09)
+    adjust_volume(orig_fname_PN, orig_fname_PP, new_fname_PN, new_fname_PP, volume_PN=.07, volume_PP=.04)
     
     # Change volume for day stimuli
     orig_fname_PN = [op.join(data_dir, 'pwd_originals', 'day_stim', 'PN.wav')]
@@ -42,6 +42,7 @@ if __name__ == "__main__":
     new_fname_PP = [op.join(data_dir, 'pwd', 'day_stim', f'pseudoparola_{fn}.wav') for fn in PP_letters]
     dev_hp, dev_sp = find_device()
     sd.default.device = dev_hp
-    adjust_volume(orig_fname_PN, orig_fname_PP, new_fname_PN, new_fname_PP, volume_PN=.2, volume_PP=.2)
+    adjust_volume(orig_fname_PN, orig_fname_PP, new_fname_PN, new_fname_PP, volume_PN=.0, volume_PP=.5)
+    # adjust_volume(orig_fname_PN, orig_fname_PP, new_fname_PN, new_fname_PP, volume_PN=.2, volume_PP=.2)
     
     

@@ -1,4 +1,4 @@
-from utils.common_functions import check_os
+from remedy.utils.common_functions import check_os
 if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
@@ -130,9 +130,12 @@ def task_C():
     image_dir = op.join(data_dir, 'img_instructions')
 
     instr1_path = os.path.join(image_dir, 'instr1_blocchi_pseudoparole.png')
+    instr2_path = os.path.join(image_dir, 'instr_blocks_cycle.png')
     end_path = os.path.join(image_dir, 'end.png')
 
     slide_instr = visual.ImageStim(win, image=instr1_path, units="pix", 
+                                   pos=(0, 0))
+    slide_instr1 = visual.ImageStim(win, image=instr2_path, units="pix", 
                                    pos=(0, 0))
     slide_end = visual.ImageStim(win, image=end_path, units="pix", pos=(0, 0))
 
@@ -142,7 +145,7 @@ def task_C():
 
     # Set time variables (seconds)    
     image_duration = 2.5
-    block_interval = 7
+    block_interval = 5
 
     all_combinations_path =  op.join(parent_dir, 'combinations', 
                                      'all_combinations_pseudo_day.csv')
@@ -189,8 +192,8 @@ def task_C():
     wait_kbd_emo(kb)
     
     # Present stimuli blocks three times
-    for cycle in range(1): # Testing only
-    # for cycle in range(3):
+    # for cycle in range(2): # Testing only
+    for cycle in range(3):
 
         for nblock in range(len(all_blocks_with_categories)):
 
@@ -230,11 +233,16 @@ def task_C():
                 log_imgaudios.append(
                     all_blocks_audio_paths[nblock].split(os.sep)[-1])
             
+            win.flip()
+            show(fixcross)
             core.wait(block_interval)
                 # if counter == 11: # TESTING PURPOSES ONLY - Limits block to X images
                 #     break
+        if cycle < 2:
+            show(slide_instr1)
+            wait_kbd_emo(kb)
 
-        # --------------------------  EXPERIMENT END  -------------------------
+    # --------------------------  EXPERIMENT END  -------------------------
     df = pd.DataFrame({
         'ImageName': log_imgnames,
         'Category': log_imgcats,

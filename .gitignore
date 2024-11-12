@@ -171,5 +171,5 @@ exe/
 *.DS_Store
 *.json
 output_NightStim/
-
+remedy/.temp
 

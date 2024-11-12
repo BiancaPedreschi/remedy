@@ -94,9 +94,14 @@ def wait_kbd(okkeys=["space", "escape"]):
         return mykey
 
 
-def wait_kbd_emo(kb, okKeys=["space", "escape"]):
+def wait_kbd_emo(kb, okKeys=["space", "escape"], maxWait=float('inf')):
     if check_os() in ['Linux']:
-        myKey = kb.waitKeys(keyList=okKeys, waitRelease=False, clear=True)[0]
+        myKey = kb.waitKeys(maxWait=maxWait, keyList=okKeys, waitRelease=False,
+                            clear=True)
+        
+        if myKey is not None:
+            myKey = myKey[0]
+            
         if myKey == "space":
             return myKey
         elif myKey == "escape":
@@ -104,7 +109,7 @@ def wait_kbd_emo(kb, okKeys=["space", "escape"]):
         else:
             return myKey
     elif check_os() in ['Windows', 'macOS']:
-        myKey = event.waitKeys(keyList=okKeys)[0]
+        myKey = event.waitKeys(maxWait=maxWait, keyList=okKeys)[0]
         if myKey == ["space"]:
             return
         elif myKey == ["escape"]:

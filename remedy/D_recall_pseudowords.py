@@ -1,4 +1,4 @@
-from utils.common_functions import check_os
+from remedy.utils.common_functions import check_os
 if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
@@ -13,6 +13,7 @@ import pandas as pd
 import parallel
 import sounddevice as sd
 import soundfile as sf
+from datetime import datetime
 
 from remedy.utils.common_functions import (wait_kbd_emo, get_meta, show,
                                            send_trigger_thread)
@@ -91,19 +92,28 @@ def task_D():
 
     # Define images paths
     instr0_path = op.join(image_dir, 'recall_pseudo.png')
+    instr1_path = op.join(image_dir, 'recall_pseudo_2.png')
     end_path = op.join(image_dir, 'end.png')
     slide_instr = visual.ImageStim(win, image=instr0_path, units="pix", 
                                    pos=(0, 0))
+    slide_instr1 = visual.ImageStim(win, image=instr1_path, units="pix", 
+                                    pos=(0, 0))
     slide_end = visual.ImageStim(win, image=end_path, units="pix", 
                                  pos=(0, 0))
     fixcross = visual.TextStim(win, text="+", units="norm", 
                                pos=(0, 0), color="black")
+    fixcross_w = visual.TextStim(win, text="+", units="norm", 
+                                 pos=(0, 0), color="white")
 
     # Set audio recording
+    cdate = datetime.now().strftime("%Y%m%d")
+    ctime = datetime.now().strftime("%H%M%S")
     fs = 44100 
     recorded_data = []
 
     show(slide_instr)
+    wait_kbd_emo(kb)
+    show(slide_instr1)
     wait_kbd_emo(kb)
 
     for n in range(len(audio_paths)):
@@ -123,16 +133,27 @@ def task_D():
         presented_audio_paths.append(audio_paths[n].split(os.sep)[-1])
 
         # Aspetta un input da tastiera e interrompi se premuto 'q'
-        response = wait_kbd_emo(kb, okKeys=emoKeys)
+        # timewall = 18.
+        response = wait_kbd_emo(kb, okKeys=emoKeys, maxWait=18)
+        
+        # Flash a white cross before passing to the next pseudoword
+        show(fixcross_w)
+        core.wait(.25)
+        win.flip()
+        core.wait(.25)
+        show(fixcross_w)
+        core.wait(1.5)
+        
         recorded_data.append(np.expand_dims(answ[~np.isnan(answ)], 1))
         
-        if response.name == 'q':
-            break
+        if response is not None:
+            if response.name == 'q':
+                break
         
     # Salva la registrazione audio su file
     recorded_data = np.vstack(recorded_data)
     audio_file = save_recording_audio(recorded_data, output_directory, 
-                                      subject_id, session, fs)
+                                      subject_id, session, cdate, ctime, fs)
 
     # Salva i percorsi delle pseudoparole presentate in un CSV
     pd.DataFrame({'Presented_Audio': presented_audio_paths}).to_csv(

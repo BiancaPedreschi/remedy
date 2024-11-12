@@ -97,7 +97,7 @@ def manual_stim(p, win, kb, subject_id, session, sex, n2_stimulus,
     os.makedirs(output_directory, exist_ok=True)
 
     stimulation_started = False
-    min_duration = 5 #* 60 # da modificare fino a min di 5 minuti
+    min_duration = 5 * 60 # da modificare fino a min di 5 minuti
     max_duration = 15 * 60
 
     timer_text = visual.TextStim(win, text='', pos=(0, 0.8), height=0.05)
