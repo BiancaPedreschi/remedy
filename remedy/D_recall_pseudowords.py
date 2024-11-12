@@ -98,25 +98,15 @@ def task_D():
     end_path = op.join(image_dir, 'end.png')
     slide_instr = visual.ImageStim(win, image=instr0_path, units="pix", 
                                    pos=(0, 0))
-<<<<<<< HEAD
-    slide_instr2= visual.ImageStim(win, image=instr1_path, units="pix", 
-                                   pos=(0, 0))
-=======
     slide_instr1 = visual.ImageStim(win, image=instr1_path, units="pix", 
                                     pos=(0, 0))
->>>>>>> 35b80a28a7592b0742714c090b99679ac7be9572
     slide_end = visual.ImageStim(win, image=end_path, units="pix", 
                                  pos=(0, 0))
     fixcross = visual.TextStim(win, text="+", units="norm", 
                                pos=(0, 0), color="black")
-<<<<<<< HEAD
-    fixcross_white = visual.TextStim(win, text="+", units="norm", 
+    fixcross_w = visual.TextStim(win, text="+", units="norm", 
                                pos=(0, 0), color="white")
 
-=======
-    fixcross_w = visual.TextStim(win, text="+", units="norm", 
-                                 pos=(0, 0), color="white")
->>>>>>> 35b80a28a7592b0742714c090b99679ac7be9572
 
     # Set audio recording
     cdate = datetime.now().strftime("%Y%m%d")
@@ -126,11 +116,7 @@ def task_D():
 
     show(slide_instr)
     wait_kbd_emo(kb)
-<<<<<<< HEAD
-    show(slide_instr2)
-=======
     show(slide_instr1)
->>>>>>> 35b80a28a7592b0742714c090b99679ac7be9572
     wait_kbd_emo(kb)
 
     for n in range(len(audio_paths)):
@@ -149,28 +135,6 @@ def task_D():
         # Salva il percorso dell'audio presentato
         presented_audio_paths.append(audio_paths[n].split(os.sep)[-1])
 
-<<<<<<< HEAD
-        # Timer per gestire il tempo tra gli stimoli
-        timer = core.Clock()
-        while timer.getTime() < 20:
-            if 18 <= timer.getTime() < 20:
-                show(fixcross_white)
-                core.wait(1)
-                win.flip()
-
-            # Controlla se è stato premuto 'q' o 'esc'
-            keys = kb.getKeys(['q', 'esc'], waitRelease=True)
-            if 'q' in keys or 'esc' in keys:
-                return  # Esce dalla funzione per interrompere l'esperimento
-
-            core.wait(0.1)  # Attendi un breve intervallo per evitare un ciclo troppo veloce
-
-        # Resetta il colore della croce di fissazione
-        show(fixcross)
-        
-        # Non aspetta un input da tastiera
-        recorded_data.append(np.expand_dims(answ[~np.isnan(answ)], 1))
-=======
         # Aspetta un input da tastiera e interrompi se premuto 'q'
         # timewall = 18.
         response = wait_kbd_emo(kb, okKeys=emoKeys, maxWait=18)
@@ -188,7 +152,6 @@ def task_D():
         if response is not None:
             if response.name == 'q':
                 break
->>>>>>> 35b80a28a7592b0742714c090b99679ac7be9572
         
     # Salva la registrazione audio su file
     recorded_data = np.vstack(recorded_data)
