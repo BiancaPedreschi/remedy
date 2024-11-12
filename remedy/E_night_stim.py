@@ -33,7 +33,8 @@ def send_trigger_thread(p, code, numlns=8):
     Args:
         p : porta parallela
         code (int): The numeric code to send.
-        numlns (int, optional): The number of lines (or pins) to use for the binary representation of the code. Default is 8.
+        numlns (int, optional): The number of lines (or pins)
+        to use for the binary representation of the code. Default is 8.
 
     Returns:
         None
@@ -51,13 +52,13 @@ def send_trigger_thread(p, code, numlns=8):
 def start_eeg_recording(p):
     RC_TRIG = 10  # Start Recording
     print("Avvio registrazione EEG")
-    send_trigger_thread(p=p, code=RC_TRIG)
+    # send_trigger_thread(p=p, code=RC_TRIG)
 
 
 def stop_eeg_recording(p):
     ED_TRIG = 40  # Stop Experiment
     print("Arresto registrazione EEG")
-    send_trigger_thread(p=p, code=ED_TRIG)
+    # send_trigger_thread(p=p, code=ED_TRIG)
 
 
 def select_stimuli(audio_paths):
@@ -76,8 +77,10 @@ def stop_pink_noise(pink_noise):
     return pink_noise
 
 
-def manual_stim(p, win, kb, subject_id, session, sex, n2_stimulus,
-                rem_stimulus, pink_noise, dev_hp, dev_sp, stim_n):
+# def manual_stim(p, win, kb, subject_id, session, sex, n2_stimulus,
+#                 rem_stimulus, pink_noise, dev_hp, dev_sp, stim_n):
+def manual_stim(win, kb, subject_id, session, sex, n2_stimulus,
+                rem_stimulus, pink_noise, stim_n):
     
     # Definizione dei codici trigger
     REM_TRIG = 22 # REM Stimulation
@@ -178,15 +181,15 @@ def manual_stim(p, win, kb, subject_id, session, sex, n2_stimulus,
             current_time = stimulation_timer.getTime()
             if current_time >= next_sound_time:
                 if selected_sound is None:
-                    send_trigger_thread(p, S_TRIG)  # Invia il trigger S_TRIG per Sham
+                    # send_trigger_thread(p, S_TRIG)  # Invia il trigger S_TRIG per Sham
                     core.wait(1)
                 else:
                     stop_pink_noise(pink_noise)
                     
-                    if np.all(selected_sound_path == n2_stimulus):
-                        send_trigger_thread(p, N2_TRIG)  # Invia il trigger N2_TRIG
-                    elif np.all(selected_sound_path == rem_stimulus):
-                        send_trigger_thread(p, REM_TRIG)  # Invia il trigger REM_TRIG
+                    # if np.all(selected_sound_path == n2_stimulus):
+                    #     send_trigger_thread(p, N2_TRIG)  # Invia il trigger N2_TRIG
+                    # elif np.all(selected_sound_path == rem_stimulus):
+                    #     send_trigger_thread(p, REM_TRIG)  # Invia il trigger REM_TRIG
                     
                     sd.play(selected_sound)
                     stim_start_time = current_time
@@ -217,8 +220,8 @@ def manual_stim(p, win, kb, subject_id, session, sex, n2_stimulus,
         instruction_text.text = "Riproduco l'allarme."
         instruction_text.draw()
         win.flip()
-        sd.default.device = dev_sp
-        send_trigger_thread(p, AS_TRIG)
+        # sd.default.device = dev_sp
+        # send_trigger_thread(p, AS_TRIG)
         alarm = sw.read(alarm_path)[1]
         sd.play(alarm)
         core.wait(2)
@@ -230,31 +233,34 @@ def manual_stim(p, win, kb, subject_id, session, sex, n2_stimulus,
         instruction_text.draw()
         win.flip()    
         dreamquestrc(subject_id, session, sex, fs=44100)
-        sd.default.device = dev_hp
+        # sd.default.device = dev_hp
 
     return "continue"
 
 
 def task_E():
     
-    if check_os() in ['Linux']:
+    # if check_os() in ['Linux']:
+    #     kb = keyboard.Keyboard(device=-1)
+    # elif check_os() in ['Windows', 'macOS']:
+    #     kb = None
+    if check_os() in ['Linux', 'Windows', 'macOS']:
         kb = keyboard.Keyboard(device=-1)
-    elif check_os() in ['Windows', 'macOS']:
+    else:
         kb = None
-    
-    dev_hp, dev_sp = find_device()
-    sd.default.device = dev_hp
+    # dev_hp, dev_sp = find_device()
+    # sd.default.device = dev_hp
     
     win = visual.Window(fullscr=False, color="black", units="norm")
     instruction_text = visual.TextStim(win, text='', pos=(0, 0), height=0.05)
     
     # Inizializzazione della porta parallela LPT1
-    try:
-        p = parallel.Parallel()
-        print("Porta parallela aperta")
-    except Exception as e:
-        p = None
-        print("Errore apertura porta parallela")
+    # try:
+    #     p = parallel.Parallel()
+    #     print("Porta parallela aperta")
+    # except Exception as e:
+    #     p = None
+    #     print("Errore apertura porta parallela")
     
     # Define triggers
     BG_TRIG = 20 # Start Experiment
@@ -271,6 +277,7 @@ def task_E():
 
     config = read_config()
     parent_dir = config['paths']['parent']
+    data_dir = config['paths']['data']
     all_combinations_path = os.path.join(parent_dir, 'combinations', 
                                          'all_combinations_pseudo_night.csv')
     all_combinations_df = pd.read_csv(all_combinations_path)
@@ -288,7 +295,7 @@ def task_E():
     pink_noise_file = os.path.join(parent_dir, 'data', 'pwd', 
                                    'night_stim', 'PN.wav')
     pink_noise = sw.read(pink_noise_file)[1]
-    send_trigger_thread(p, BG_TRIG)
+    # send_trigger_thread(p, BG_TRIG)
     pink_noise = play_pink_noise(pink_noise)
     print("Pink noise avviato.")
 
@@ -298,14 +305,20 @@ def task_E():
     try:
         while stimulation_count < max_stimulations:
             print(f"Iniziando stimolazione {stimulation_count + 1} di {max_stimulations}")
-            result = manual_stim(p=p, win=win, kb=kb, subject_id=subject_id,
-                                 session=session, sex=sex, 
-                                 n2_stimulus=n2_stimulus, 
-                                 rem_stimulus=rem_stimulus, 
-                                 pink_noise=pink_noise, 
-                                 dev_hp=dev_hp, dev_sp=dev_sp, 
-                                 stim_n=stimulation_count)
-            
+            # result = manual_stim(p=p, win=win, kb=kb, subject_id=subject_id,
+            #                      session=session, sex=sex, 
+            #                      n2_stimulus=n2_stimulus, 
+            #                      rem_stimulus=rem_stimulus, 
+            #                      pink_noise=pink_noise, 
+            #                      dev_hp=dev_hp, dev_sp=dev_sp, 
+            #                      stim_n=stimulation_count)
+            result = manual_stim(win=win, kb=kb, subject_id=subject_id,
+                                session=session, sex=sex, 
+                                n2_stimulus=n2_stimulus, 
+                                rem_stimulus=rem_stimulus, 
+                                pink_noise=pink_noise,
+                                stim_n=stimulation_count)        
+        
             if result == "quit":
                 instruction_text.text = "Uscita richiesta dall'utente."
                 instruction_text.draw()
@@ -339,7 +352,7 @@ def task_E():
         instruction_text.draw()
         win.flip()
     finally:
-        send_trigger_thread(p, I_TRIG)
+        # send_trigger_thread(p, I_TRIG)
         stop_pink_noise(pink_noise)
         # Uncomment if you want to automatically stop EEG recording
         # stop_eeg_recording(p)

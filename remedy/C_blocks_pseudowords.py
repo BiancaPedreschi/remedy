@@ -1,4 +1,4 @@
-from utils.common_functions import check_os
+from remedy.utils.common_functions import check_os
 if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
@@ -110,17 +110,17 @@ def task_C():
         kb = None
     
     # Define audio device    
-    devices = find_device()
-    dev_hp = devices[0]
-    sd.default.device = dev_hp
+    # devices = find_device()
+    # dev_hp = devices[0]
+    # sd.default.device = dev_hp
         
     # Define parallel port
-    try:
-        p = parallel.Parallel()
-        print("Porta parallela aperta")
-    except Exception as e:
-        p = None
-        print("Errore apertura porta parallela")
+    # try:
+    #     p = parallel.Parallel()
+    #     print("Porta parallela aperta")
+    # except Exception as e:
+    #     p = None
+    #     print("Errore apertura porta parallela")
     
     # Define triggers
     SI_TRIG = 28 # Trigger for image and sound presentation
@@ -130,10 +130,13 @@ def task_C():
     image_dir = op.join(data_dir, 'img_instructions')
 
     instr1_path = os.path.join(image_dir, 'instr1_blocchi_pseudoparole.png')
+    instr2_path = os.path.join(image_dir, 'instr_blocks_cycle.png')
     end_path = os.path.join(image_dir, 'end.png')
 
     slide_instr = visual.ImageStim(win, image=instr1_path, units="pix", 
                                    pos=(0, 0))
+    slide_instr2 = visual.ImageStim(win, image=instr2_path, units="pix",
+                                    pos=(0, 0))
     slide_end = visual.ImageStim(win, image=end_path, units="pix", pos=(0, 0))
 
     # Fixation cross
@@ -189,8 +192,8 @@ def task_C():
     wait_kbd_emo(kb)
     
     # Present stimuli blocks three times
-    for cycle in range(1): # Testing only
-    # for cycle in range(3):
+    # for cycle in range(1): # Testing only
+    for cycle in range(2):
 
         for nblock in range(len(all_blocks_with_categories)):
 
@@ -213,7 +216,7 @@ def task_C():
                 win.flip()
 
                 img_path = op.join(block_folder, imgname)
-                send_trigger_thread(p, SI_TRIG)
+                # send_trigger_thread(p, SI_TRIG)
                 sd.play(sounds[nblock])
                 img = visual.ImageStim(win, image=img_path, units="norm", 
                                        pos=(0, 0))
@@ -229,23 +232,28 @@ def task_C():
                 log_imgcats.append(category)
                 log_imgaudios.append(
                     all_blocks_audio_paths[nblock].split(os.sep)[-1])
-            
+                
+            win.flip()
+            show(fixcross)
             core.wait(block_interval)
-                # if counter == 11: # TESTING PURPOSES ONLY - Limits block to X images
-                #     break
 
-        # --------------------------  EXPERIMENT END  -------------------------
-    df = pd.DataFrame({
+        if cycle <= 2:
+            show(slide_instr2)
+            wait_kbd_emo(kb)
+
+    # --------------------------  EXPERIMENT END  -------------------------
+    df = pd.DataFrame({ 
         'ImageName': log_imgnames,
         'Category': log_imgcats,
         'Audios': log_imgaudios,
     })
 
     df.to_csv(op.join(output_directory, f'RY{subject_id:03d}_N{session}.csv'),
-                      index=False)
+                    index=False)
     show(slide_end)
     core.wait(2)
     win.close()
+
     return
 
 if __name__ == "__main__":

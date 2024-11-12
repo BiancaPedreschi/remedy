@@ -1,4 +1,4 @@
-from utils.common_functions import check_os
+from remedy.utils.common_functions import check_os
 if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
@@ -23,8 +23,8 @@ from remedy.config.config import read_config
 
 def task_D():
     
-    devices = find_device()
-    dev_sp = devices[1]
+    # devices = find_device()
+    # dev_sp = devices[1]
     config = read_config()
     parent_dir = config['paths']['parent']
     data_dir = config['paths']['data']
@@ -33,13 +33,13 @@ def task_D():
                                      'all_combinations_pseudo_day.csv')
     all_combinations_df = pd.read_csv(all_combinations_path)
     
-    # Define parallel port
-    try:
-        p = parallel.Parallel()
-        print("Porta parallela aperta")
-    except Exception as e:
-        p = None
-        print("Errore apertura porta parallela")
+    # # Define parallel port
+    # try:
+    #     p = parallel.Parallel()
+    #     print("Porta parallela aperta")
+    # except Exception as e:
+    #     p = None
+    #     print("Errore apertura porta parallela")
     
     # Define trigger
     SN_TRIG = 26 # Trigger for sound presentation
@@ -61,7 +61,7 @@ def task_D():
                                f'N{session}', 'task_D')
     os.makedirs(output_directory, exist_ok=True)
 
-    sd.default.device = dev_sp
+    # sd.default.device = dev_sp
     sounds = [sf.read(audio)[0] for audio in audio_paths]
 
     # Set psychopy video and keyboard settings
@@ -82,8 +82,10 @@ def task_D():
     if check_os() in ['Linux']:
         kb = keyboard.Keyboard(device=-1)
     elif check_os() in ['Windows', 'macOS']:
-        kb = None
-    emoKeys = ['space', 'q']
+        # kb = None
+        kb = keyboard.Keyboard()
+    # emoKeys = ['space', 'q']
+    emoKeys = ['esc', 'q']
     presented_audio_paths = []
 
     ##### Show instructions #####
@@ -91,13 +93,19 @@ def task_D():
 
     # Define images paths
     instr0_path = op.join(image_dir, 'recall_pseudo.png')
+    instr1_path = op.join(image_dir, 'recall_pseudo_2.png')
     end_path = op.join(image_dir, 'end.png')
     slide_instr = visual.ImageStim(win, image=instr0_path, units="pix", 
+                                   pos=(0, 0))
+    slide_instr2= visual.ImageStim(win, image=instr1_path, units="pix", 
                                    pos=(0, 0))
     slide_end = visual.ImageStim(win, image=end_path, units="pix", 
                                  pos=(0, 0))
     fixcross = visual.TextStim(win, text="+", units="norm", 
                                pos=(0, 0), color="black")
+    fixcross_white = visual.TextStim(win, text="+", units="norm", 
+                               pos=(0, 0), color="white")
+
 
     # Set audio recording
     fs = 44100 
@@ -105,11 +113,13 @@ def task_D():
 
     show(slide_instr)
     wait_kbd_emo(kb)
+    show(slide_instr2)
+    wait_kbd_emo(kb)
 
     for n in range(len(audio_paths)):
         show(fixcross)
         core.wait(1.)
-        send_trigger_thread(p, SN_TRIG)
+        # send_trigger_thread(p, SN_TRIG)
         qst = np.full((sounds[n].shape[0], 1), np.nan)
         sd.playrec(sounds[n], samplerate=fs, channels=1, 
                    dtype='int16', out=qst, input_mapping=np.array([1]),
@@ -122,12 +132,26 @@ def task_D():
         # Salva il percorso dell'audio presentato
         presented_audio_paths.append(audio_paths[n].split(os.sep)[-1])
 
-        # Aspetta un input da tastiera e interrompi se premuto 'q'
-        response = wait_kbd_emo(kb, okKeys=emoKeys)
-        recorded_data.append(np.expand_dims(answ[~np.isnan(answ)], 1))
+        # Timer per gestire il tempo tra gli stimoli
+        timer = core.Clock()
+        while timer.getTime() < 20:
+            if 18 <= timer.getTime() < 20:
+                show(fixcross_white)
+                core.wait(1)
+                win.flip()
+
+            # Controlla se è stato premuto 'q' o 'esc'
+            keys = kb.getKeys(['q', 'esc'], waitRelease=True)
+            if 'q' in keys or 'esc' in keys:
+                return  # Esce dalla funzione per interrompere l'esperimento
+
+            core.wait(0.1)  # Attendi un breve intervallo per evitare un ciclo troppo veloce
+
+        # Resetta il colore della croce di fissazione
+        show(fixcross)
         
-        if response.name == 'q':
-            break
+        # Non aspetta un input da tastiera
+        recorded_data.append(np.expand_dims(answ[~np.isnan(answ)], 1))
         
     # Salva la registrazione audio su file
     recorded_data = np.vstack(recorded_data)

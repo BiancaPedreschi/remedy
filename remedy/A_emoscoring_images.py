@@ -1,5 +1,5 @@
 from utils.common_functions import check_os
-if check_os() in ['Linux']:
+if check_os() in ['Linux']: 
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
     xlib.XInitThreads()
@@ -11,8 +11,8 @@ import os.path as op
 import pandas as pd
 import parallel
 
-from remedy.config.config import read_config
-from remedy.utils.common_functions import (send_trigger_thread, wait_kbd_emo, 
+from config.config import read_config
+from utils.common_functions import (send_trigger_thread, wait_kbd_emo, 
                                            get_meta, show)
 
 

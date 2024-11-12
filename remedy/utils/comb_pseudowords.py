@@ -42,6 +42,7 @@ def main():
     # Define paths and stimuli
     config = read_config()
     data_dir = config['paths']['data']
+    parent_dir = config['paths']['parent']
     day_dir = op.join(data_dir, 'pwd', 'day_stim')
     night_dir = op.join(data_dir, 'pwd', 'night_stim')
     
@@ -62,7 +63,7 @@ def main():
     print(category_counts)
     print("\nCounts per Audio:")
     print(audio_counts)
-    all_combinations.to_csv(op.join(os.getcwd(), 'combinations', 'all_combinations_pseudo_day.csv'), index=False)
+    all_combinations.to_csv(op.join(parent_dir, 'combinations', 'all_combinations_pseudo_day.csv'), index=False)
     
     #Generate combinations for night stimultation
     all_combinations = pd.DataFrame()
@@ -78,7 +79,7 @@ def main():
     print(category_counts)
     print("\nCounts per Audio:")
     print(audio_counts)
-    all_combinations.to_csv(op.join(os.getcwd(), 'combinations', 'all_combinations_pseudo_night.csv'), index=False)
+    all_combinations.to_csv(op.join(parent_dir, 'combinations', 'all_combinations_pseudo_night.csv'), index=False)
 
 
 if __name__ == "__main__":
