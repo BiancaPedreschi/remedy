@@ -1,5 +1,5 @@
-from utils.common_functions import check_os
-if check_os() in ['Linux']: 
+from remedy.utils.common_functions import check_os
+if check_os() in ['Linux']:
     import ctypes
     xlib = ctypes.cdll.LoadLibrary("libX11.so")
     xlib.XInitThreads()
@@ -173,7 +173,7 @@ def task_A():
         vals[n] = val_key.name
         core.wait(.1)
 
-        # Arousal rating
+        # Arousal rating2
         img.draw()
         aroSAM.draw()
         win.flip()

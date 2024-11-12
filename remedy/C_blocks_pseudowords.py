@@ -135,8 +135,8 @@ def task_C():
 
     slide_instr = visual.ImageStim(win, image=instr1_path, units="pix", 
                                    pos=(0, 0))
-    slide_instr2 = visual.ImageStim(win, image=instr2_path, units="pix",
-                                    pos=(0, 0))
+    slide_instr1 = visual.ImageStim(win, image=instr2_path, units="pix", 
+                                   pos=(0, 0))
     slide_end = visual.ImageStim(win, image=end_path, units="pix", pos=(0, 0))
 
     # Fixation cross
@@ -145,7 +145,7 @@ def task_C():
 
     # Set time variables (seconds)    
     image_duration = 2.5
-    block_interval = 7
+    block_interval = 5
 
     all_combinations_path =  op.join(parent_dir, 'combinations', 
                                      'all_combinations_pseudo_day.csv')
@@ -192,8 +192,8 @@ def task_C():
     wait_kbd_emo(kb)
     
     # Present stimuli blocks three times
-    # for cycle in range(1): # Testing only
-    for cycle in range(2):
+    # for cycle in range(2): # Testing only
+    for cycle in range(3):
 
         for nblock in range(len(all_blocks_with_categories)):
 
@@ -232,17 +232,18 @@ def task_C():
                 log_imgcats.append(category)
                 log_imgaudios.append(
                     all_blocks_audio_paths[nblock].split(os.sep)[-1])
-                
+            
             win.flip()
             show(fixcross)
             core.wait(block_interval)
-
-        if cycle <= 2:
-            show(slide_instr2)
+                # if counter == 11: # TESTING PURPOSES ONLY - Limits block to X images
+                #     break
+        if cycle < 2:
+            show(slide_instr1)
             wait_kbd_emo(kb)
 
     # --------------------------  EXPERIMENT END  -------------------------
-    df = pd.DataFrame({ 
+    df = pd.DataFrame({
         'ImageName': log_imgnames,
         'Category': log_imgcats,
         'Audios': log_imgaudios,
