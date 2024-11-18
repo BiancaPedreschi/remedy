@@ -24,8 +24,8 @@ from remedy.config.config import read_config
 
 def task_D():
     
-    # devices = find_device()
-    # dev_sp = devices[1]
+    devices = find_device()
+    dev_sp = devices[1]
     config = read_config()
     parent_dir = config['paths']['parent']
     data_dir = config['paths']['data']
@@ -35,12 +35,12 @@ def task_D():
     all_combinations_df = pd.read_csv(all_combinations_path)
     
     # # Define parallel port
-    # try:
-    #     p = parallel.Parallel()
-    #     print("Porta parallela aperta")
-    # except Exception as e:
-    #     p = None
-    #     print("Errore apertura porta parallela")
+    try:
+        p = parallel.Parallel()
+        print("Porta parallela aperta")
+    except Exception as e:
+        p = None
+        print("Errore apertura porta parallela")
     
     # Define trigger
     SN_TRIG = 26 # Trigger for sound presentation
@@ -62,7 +62,7 @@ def task_D():
                                f'N{session}', 'task_D')
     os.makedirs(output_directory, exist_ok=True)
 
-    # sd.default.device = dev_sp
+    sd.default.device = dev_sp
     sounds = [sf.read(audio)[0] for audio in audio_paths]
 
     # Set psychopy video and keyboard settings
@@ -86,7 +86,7 @@ def task_D():
         # kb = None
         kb = keyboard.Keyboard()
     # emoKeys = ['space', 'q']
-    emoKeys = ['esc', 'q']
+    emoKeys = ['space', 'q']
     presented_audio_paths = []
 
     ##### Show instructions #####
@@ -122,7 +122,7 @@ def task_D():
     for n in range(len(audio_paths)):
         show(fixcross)
         core.wait(1.)
-        # send_trigger_thread(p, SN_TRIG)
+        send_trigger_thread(p, SN_TRIG)
         qst = np.full((sounds[n].shape[0], 1), np.nan)
         sd.playrec(sounds[n], samplerate=fs, channels=1, 
                    dtype='int16', out=qst, input_mapping=np.array([1]),
@@ -136,7 +136,6 @@ def task_D():
         presented_audio_paths.append(audio_paths[n].split(os.sep)[-1])
 
         # Aspetta un input da tastiera e interrompi se premuto 'q'
-        # timewall = 18.
         response = wait_kbd_emo(kb, okKeys=emoKeys, maxWait=18)
         
         # Flash a white cross before passing to the next pseudoword
