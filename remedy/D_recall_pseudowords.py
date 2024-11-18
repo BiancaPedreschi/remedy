@@ -58,6 +58,13 @@ def task_D():
     audio_paths = filtered_df['Pseudo'].tolist() * 33  # Moltiplica per 34 per includere la ripetizione
     random.shuffle(audio_paths)
 
+    def ensure_no_consecutive_repeats(lst, max_repeats=2):
+        for i in range(len(lst) - max_repeats):
+            while lst[i] == lst[i + 1]:
+                random.shuffle(lst[i + 1:])
+        return lst
+
+    audio_paths = ensure_no_consecutive_repeats(audio_paths)
     output_directory = op.join(results_dir, f'RY{subject_id:03d}', 
                                f'N{session}', 'task_D')
     os.makedirs(output_directory, exist_ok=True)
