@@ -110,17 +110,17 @@ def task_C():
         kb = None
     
     # Define audio device    
-    # devices = find_device()
-    # dev_hp = devices[0]
-    # sd.default.device = dev_hp
+    devices = find_device()
+    dev_hp = devices[0]
+    sd.default.device = dev_hp
         
     # Define parallel port
-    # try:
-    #     p = parallel.Parallel()
-    #     print("Porta parallela aperta")
-    # except Exception as e:
-    #     p = None
-    #     print("Errore apertura porta parallela")
+    try:
+        p = parallel.Parallel()
+        print("Porta parallela aperta")
+    except Exception as e:
+        p = None
+        print("Errore apertura porta parallela")
     
     # Define triggers
     SI_TRIG = 28 # Trigger for image and sound presentation
@@ -216,7 +216,7 @@ def task_C():
                 win.flip()
 
                 img_path = op.join(block_folder, imgname)
-                # send_trigger_thread(p, SI_TRIG)
+                send_trigger_thread(p, SI_TRIG)
                 sd.play(sounds[nblock])
                 img = visual.ImageStim(win, image=img_path, units="norm", 
                                        pos=(0, 0))

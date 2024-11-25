@@ -21,8 +21,9 @@ def colored_print(color, text):
 def conv2sec(hours, minutes, seconds):
     return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
 
-def dreamquestrc(subject_id, session, sex, fs=44100):
+def dreamquestrc(subject_id, session, sex, dev, fs=44100):
     # win = visual.Window(fullscr=False, color="white", units="norm")
+    sd.default.device = dev
 
     config = read_config()
     data_dir = config['paths']['data']
@@ -198,7 +199,7 @@ def dreamquestrc(subject_id, session, sex, fs=44100):
         
         # Salva la registrazione audio
         
-        cdate = datetime.now().strftime("%Y%m%d")
+        cdate = datetime.now().strftime("%d%m%Y")
         ctime = datetime.now().strftime("%H%M%S")
         if recorded_data.shape[0] > 0:
             try:

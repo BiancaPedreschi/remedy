@@ -152,10 +152,10 @@ def task_A():
     counter = 0
     for n in range(len(imgList)):
 
-        core.wait(.1)
+        # core.wait(.1)
         show(fixcross)
         core.wait(1.)
-        win.flip()
+        # win.flip()
         send_trigger_thread(p, IG_TRIG)
         img = visual.ImageStim(win, image=imgList[n], units="norm", 
                                pos=(0, 0.2))
@@ -168,25 +168,27 @@ def task_A():
         img.draw()
         valSAM.draw()
         win.flip()
-        core.wait(.1)
+        core.wait(.2)
         val_key = wait_kbd_emo(kb, okKeys=emoKeys)
         vals[n] = val_key.name
-        core.wait(.1)
+        core.wait(.2)
 
         # Arousal rating2
         img.draw()
         aroSAM.draw()
         win.flip()
-        core.wait(.1)
+        core.wait(.2)
         aro_key = wait_kbd_emo(kb, okKeys=emoKeys)
         aros[n] = aro_key.name
-        core.wait(.1)
+        core.wait(.2)
+        
+        del img
         
         counter += 1
 
         if counter % 33 == 0 and counter != 99:
             show(slideBrk)
-            core.wait(.1)
+            core.wait(.2)
             wait_kbd_emo(kb)
 
     show(slide_end)

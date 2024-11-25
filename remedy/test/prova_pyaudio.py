@@ -78,28 +78,30 @@ def stop_audio(stream, audio):
     audio.terminate()
 
 # Esempio di utilizzo
-pink_noise_file = '/Users/foscagiannotti/Desktop/python_projects/space/remedy/data/pwd/PN_segments/M_PN_2.5s_11.wav'
-pseudoparola_file = '/Users/foscagiannotti/Desktop/python_projects/space/remedy/data/pwd/night_stim/pseudoparola_A.wav'
+# pink_noise_file = '/home/phantasos/python_projects/space/remedy/data/PN_48000.wav'
+pink_noise_file = '/home/phantasos/python_projects/space/remedy/data/pwd/day_stim/pseudoparola_B.wav'
+pseudoparola_file = '/home/phantasos/python_projects/space/remedy/data/pwd/day_stim/pseudoparola_C.wav'
 
-dev_sp = 3
-dev_hp = 3
+dev_sp = 4
+dev_hp = 8
 
 # Riproduci il pink noise su dev_sp
-# stream_pink, audio_pink = play_audio(pink_noise_file, device_index=dev_sp)
+stream_pink, audio_pink = play_audio(pink_noise_file, device_index=dev_sp)
 print("Pink noise avviato.")
 # time.sleep(5)
-stream_pseudo, audio_pseudo = play_audio(pseudoparola_file, device_index=dev_hp)
+# stream_pseudo, audio_pseudo = play_audio(pseudoparola_file, device_index=dev_hp)
 keys = kb.waitKeys(keyList=['n', 'w', 's', 'escape', 'esc'])
 # Riproduci le pseudoparole su dev_hp
 for i in range(10):
     stream_pseudo, audio_pseudo = play_audio(pseudoparola_file, device_index=dev_hp)
     print("Pseudoparole avviate.")
-    # while stream_pseudo.is_active():
-    #     time.sleep(0.001)
-    while True:
-        continue
+    while stream_pseudo.is_active():
+        time.sleep(0.001)
+    stop_audio(stream_pseudo, audio_pseudo)
+    # while True:
+    #     continue
 time.sleep(5)
-# stop_audio(stream_pink, audio_pink)
-stop_audio(stream_pseudo, audio_pseudo)
+stop_audio(stream_pink, audio_pink)
+# stop_audio(stream_pseudo, audio_pseudo)
 
 

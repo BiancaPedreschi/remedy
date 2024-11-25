@@ -5,15 +5,13 @@ if check_os() in ['Linux']:
     xlib.XInitThreads()
 from psychopy import visual, core
 from psychopy.hardware import keyboard
-# from psychopy import prefs
+from psychopy import prefs
 
 import numpy as np
 import os
 import pandas as pd
 import random
 import sounddevice as sd
-import pyaudio
-import wave 
 import scipy.io.wavfile as sw
 import parallel
 import time
@@ -24,9 +22,9 @@ from remedy.questionnaire.dreamquestrc import dreamquestrc
 from remedy.utils.find_devices import find_device
 
 
-# prefs.hardware['audioLib'] = ['sounddevice', 'pyo', 'pygame', 'PTB']
-# prefs.hardware['audioDevice'] = 'sysdefault'
-# prefs.hardware['audioLatencyMode'] = 3
+prefs.hardware['audioLib'] = ['sounddevice', 'pyo', 'pygame', 'PTB']
+prefs.hardware['audioDevice'] = 'sysdefault'
+prefs.hardware['audioLatencyMode'] = 3
 
 def send_trigger_thread(p, code, numlns=8):
     """
@@ -51,16 +49,16 @@ def send_trigger_thread(p, code, numlns=8):
     return
 
     
-# def start_eeg_recording(p):
-#     RC_TRIG = 10  # Start Recording
-#     print("Avvio registrazione EEG")
-#     # send_trigger_thread(p=p, code=RC_TRIG)
+def start_eeg_recording(p):
+    RC_TRIG = 10  # Start Recording
+    print("Avvio registrazione EEG")
+    # send_trigger_thread(p=p, code=RC_TRIG)
 
 
-# def stop_eeg_recording(p):
-#     ED_TRIG = 40  # Stop Experiment
-#     print("Arresto registrazione EEG")
-#     # send_trigger_thread(p=p, code=ED_TRIG)
+def stop_eeg_recording(p):
+    ED_TRIG = 40  # Stop Experiment
+    print("Arresto registrazione EEG")
+    # send_trigger_thread(p=p, code=ED_TRIG)
 
 
 def select_stimuli(audio_paths):
@@ -69,37 +67,20 @@ def select_stimuli(audio_paths):
     return selected[0], selected[1], control
 
 
-def play_audio(file_path, device_index):
-    wf = wave.open(file_path, 'rb')
-    audio = pyaudio.PyAudio()
+def play_pink_noise(pink_noise):
+    sd.play(pink_noise, loop=True)
+    return pink_noise
 
-    def callback(in_data, frame_count, time_info, status):
-        data = wf.readframes(frame_count)
-        if len(data) < frame_count * wf.getsampwidth():
-            wf.rewind()
-            data += wf.readframes(frame_count - len(data) // wf.getsampwidth())
-        return (data, pyaudio.paContinue)
 
-    stream = audio.open(format=audio.get_format_from_width(wf.getsampwidth()),
-                        channels=wf.getnchannels(),
-                        rate=wf.getframerate(),
-                        output=True,
-                        output_device_index=device_index,
-                        stream_callback=callback)
-    stream.start_stream()
-    return stream, audio
-
-def stop_audio(stream, audio):
-    stream.stop_stream()
-    stream.close()
-    audio.terminate()
+def stop_pink_noise(pink_noise):
+    sd.stop()
+    return pink_noise
 
 
 # def manual_stim(p, win, kb, subject_id, session, sex, n2_stimulus,
 #                 rem_stimulus, pink_noise, dev_hp, dev_sp, stim_n):
-
 def manual_stim(win, kb, subject_id, session, sex, n2_stimulus,
-                rem_stimulus, stream_pink, audio_pink, dev_hp, dev_sp, stim_n):
+                rem_stimulus, pink_noise, stim_n):
     
     # Definizione dei codici trigger
     REM_TRIG = 22 # REM Stimulation
@@ -119,7 +100,7 @@ def manual_stim(win, kb, subject_id, session, sex, n2_stimulus,
     os.makedirs(output_directory, exist_ok=True)
 
     stimulation_started = False
-    min_duration = 5 #* 60 # da modificare fino a min di 5 minuti
+    min_duration = 5 * 60 # da modificare fino a min di 5 minuti
     max_duration = 15 * 60
 
     timer_text = visual.TextStim(win, text='', pos=(0, 0.8), height=0.05)
@@ -145,19 +126,19 @@ def manual_stim(win, kb, subject_id, session, sex, n2_stimulus,
                 return "quit"
             if 'n' in keys:
                 stimulation_started = True
-                # n2_sound = sw.read(n2_stimulus)[1]
-                # selected_sound = n2_sound
+                n2_sound = sw.read(n2_stimulus)[1]
+                selected_sound = n2_sound
                 selected_sound_path = n2_stimulus
                 print("Stimolazione N2 selezionata")
             elif 'w' in keys:
                 stimulation_started = True
-                # rem_sound = sw.read(rem_stimulus)[1]
-                # selected_sound = rem_sound
+                rem_sound = sw.read(rem_stimulus)[1]
+                selected_sound = rem_sound
                 selected_sound_path = rem_stimulus
                 print("Stimolazione REM selezionata")
             elif 's' in keys:
                 stimulation_started = True
-                selected_sound_path = None
+                selected_sound = None
                 print("SHAM!")
 
             if stimulation_started:
@@ -199,30 +180,27 @@ def manual_stim(win, kb, subject_id, session, sex, n2_stimulus,
             # Nel ciclo principale:
             current_time = stimulation_timer.getTime()
             if current_time >= next_sound_time:
-                if selected_sound_path is None:
+                if selected_sound is None:
                     # send_trigger_thread(p, S_TRIG)  # Invia il trigger S_TRIG per Sham
                     core.wait(1)
                 else:
-                    # stop_pink_noise(pink_noise)
+                    stop_pink_noise(pink_noise)
                     
                     # if np.all(selected_sound_path == n2_stimulus):
                     #     send_trigger_thread(p, N2_TRIG)  # Invia il trigger N2_TRIG
                     # elif np.all(selected_sound_path == rem_stimulus):
                     #     send_trigger_thread(p, REM_TRIG)  # Invia il trigger REM_TRIG
                     
-                    # sd.play(selected_sound)
-                    stream_selected, audio_selected = play_audio(selected_sound_path, device_index=dev_hp)
+                    sd.play(selected_sound)
                     stim_start_time = current_time
                     stimulation_times.append([stim_start_time, 
                                             selected_sound_path.split(
                                                 os.sep)[-1]])
-                    while stream_selected.is_active():
-                        core.wait(0.001)
-                    stop_audio(stream_selected, audio_selected)
+                    
                     print(f"Tempo atteso: {inter_stimulus_interval:.2f} secondi")
                     
-                    # sd.wait()
-                    # play_pink_noise(pink_noise)
+                    sd.wait()
+                    play_pink_noise(pink_noise)
                     
                 # Aggiorna il tempo per il prossimo stimolo
                 stimulation_timer.reset()
@@ -238,19 +216,15 @@ def manual_stim(win, kb, subject_id, session, sex, n2_stimulus,
 
     # Codice per l'allarme e il questionario
     if stimulation_started:
-        # stop_pink_noise(pink_noise) 
-        stop_audio(stream_pink, audio_pink)
+        stop_pink_noise(pink_noise)
         instruction_text.text = "Riproduco l'allarme."
         instruction_text.draw()
         win.flip()
-        stream_alarm, audio_alarm = play_audio(alarm_path, device_index=dev_sp)
         # sd.default.device = dev_sp
         # send_trigger_thread(p, AS_TRIG)
-        # alarm = sw.read(alarm_path)[1]
-        # sd.play(alarm)
-        while stream_alarm.is_active():
-            core.wait(0.001)
-        stop_audio(stream_alarm, audio_alarm)
+        alarm = sw.read(alarm_path)[1]
+        sd.play(alarm)
+        core.wait(2)
         instruction_text.text = "Premi la barra spaziatrice per l'avvio del questionario..."
         instruction_text.draw()
         win.flip()
@@ -264,7 +238,6 @@ def manual_stim(win, kb, subject_id, session, sex, n2_stimulus,
     return "continue"
 
 
-
 def task_E():
     
     # if check_os() in ['Linux']:
@@ -275,12 +248,8 @@ def task_E():
         kb = keyboard.Keyboard(device=-1)
     else:
         kb = None
-
     # dev_hp, dev_sp = find_device()
-    dev_hp = 1
-    dev_sp = 3
     # sd.default.device = dev_hp
-    
     
     win = visual.Window(fullscr=False, color="black", units="norm")
     instruction_text = visual.TextStim(win, text='', pos=(0, 0), height=0.05)
@@ -323,8 +292,11 @@ def task_E():
     print(f"Stimolo di controllo (non usato): {os.path.basename(control_stimulus)}")
 
     # Read the pink noise file
-    pink_noise_file = os.path.join(data_dir, 'pwd', 'PN_segments', 'M_PN_2.5s_11.wav')
-    stream_pink, audio_pink = play_audio(pink_noise_file, device_index=3)
+    pink_noise_file = os.path.join(parent_dir, 'data', 'pwd', 
+                                   'night_stim', 'PN.wav')
+    pink_noise = sw.read(pink_noise_file)[1]
+    # send_trigger_thread(p, BG_TRIG)
+    pink_noise = play_pink_noise(pink_noise)
     print("Pink noise avviato.")
 
     stimulation_count = 0
@@ -344,10 +316,9 @@ def task_E():
                                 session=session, sex=sex, 
                                 n2_stimulus=n2_stimulus, 
                                 rem_stimulus=rem_stimulus, 
-                                stream_pink=stream_pink, 
-                                audio_pink=audio_pink,
-                                dev_hp=dev_hp, dev_sp=dev_sp, 
-                                stim_n=stimulation_count)
+                                pink_noise=pink_noise,
+                                stim_n=stimulation_count)        
+        
             if result == "quit":
                 instruction_text.text = "Uscita richiesta dall'utente."
                 instruction_text.draw()
@@ -367,29 +338,24 @@ def task_E():
                         instruction_text.text = "Uscita richiesta dall'utente."
                         instruction_text.draw()
                         win.flip()
-                        stop_audio(stream_pink, audio_pink)
                         break
-                    elif 'c' in keys:
-                        instruction_text.text = "Continuo con la prossima stimolazione."
-                        instruction_text.draw()
-                        win.flip()
-                        stream_pink, audio_pink = play_audio(pink_noise_file, device_index=3)
+                    stop_pink_noise(pink_noise)
+                    pink_noise = play_pink_noise(pink_noise)
 
             else:
                 instruction_text.text = f"Risultato inaspettato: {result}"
                 instruction_text.draw()
                 win.flip()
-                stop_audio(stream_pink, audio_pink)
                 break
 
         instruction_text.text = f"Esperimento completato dopo {stimulation_count} stimolazioni."
         instruction_text.draw()
         win.flip()
     finally:
-        # send_trigger_thread(p, I_TRIG
+        # send_trigger_thread(p, I_TRIG)
+        stop_pink_noise(pink_noise)
         # Uncomment if you want to automatically stop EEG recording
         # stop_eeg_recording(p)
-        stop_audio(stream_pink, audio_pink)
         win.close()
 
 if __name__ == "__main__":

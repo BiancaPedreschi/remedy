@@ -55,9 +55,9 @@ def task_D():
         (all_combinations_df['Session'] == session)]
     
     # Ottieni i percorsi delle pseudoparole
-    audio_paths = filtered_df['Pseudo'].tolist() * 33  # Moltiplica per 34 per includere la ripetizione
-    random.shuffle(audio_paths)
-
+    audio_paths = filtered_df['Pseudo'].tolist()  # Moltiplica per 34 per includere la ripetizione
+    # random.shuffle(audio_paths)
+    
     output_directory = op.join(results_dir, f'RY{subject_id:03d}', 
                                f'N{session}', 'task_D')
     os.makedirs(output_directory, exist_ok=True)
@@ -107,9 +107,8 @@ def task_D():
     fixcross_w = visual.TextStim(win, text="+", units="norm", 
                                pos=(0, 0), color="white")
 
-
     # Set audio recording
-    cdate = datetime.now().strftime("%Y%m%d")
+    cdate = datetime.now().strftime("%d%m%Y")
     ctime = datetime.now().strftime("%H%M%S")
     fs = 44100 
     recorded_data = []
@@ -117,14 +116,24 @@ def task_D():
     show(slide_instr)
     wait_kbd_emo(kb)
     show(slide_instr1)
-    wait_kbd_emo(kb)
+    # wait_kbd_emo(kb)
 
-    for n in range(len(audio_paths)):
+    _audio_paths = audio_paths.copy()
+    _sounds = sounds.copy()
+    
+    for n in range(99):
+        if len(_sounds) == 0:
+            _audio_paths = audio_paths.copy()
+            _sounds = sounds.copy()
+        pp = np.random.choice(len(_audio_paths))
+        audio_path_presented = _audio_paths.pop(pp)
+        sound_presented = _sounds.pop(pp)
+        
         show(fixcross)
         core.wait(1.)
         send_trigger_thread(p, SN_TRIG)
-        qst = np.full((sounds[n].shape[0], 1), np.nan)
-        sd.playrec(sounds[n], samplerate=fs, channels=1, 
+        qst = np.full((sound_presented.shape[0], 1), np.nan)
+        sd.playrec(sound_presented, samplerate=fs, channels=1, 
                    dtype='int16', out=qst, input_mapping=np.array([1]),
                    output_mapping=np.array([1, 2]))
         answ = np.full((60*45*fs, 1), np.nan)
@@ -133,7 +142,7 @@ def task_D():
         sd.rec(samplerate=fs, channels=1, out=answ, dtype='int16')
         
         # Salva il percorso dell'audio presentato
-        presented_audio_paths.append(audio_paths[n].split(os.sep)[-1])
+        presented_audio_paths.append(audio_path_presented.split(os.sep)[-1])
 
         # Aspetta un input da tastiera e interrompi se premuto 'q'
         response = wait_kbd_emo(kb, okKeys=emoKeys, maxWait=18)
